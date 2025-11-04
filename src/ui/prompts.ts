@@ -277,4 +277,53 @@ export class Prompts {
       },
     });
   }
+
+  /**
+   * Prompt selection with autocomplete
+   */
+  static async selectPrompt(
+    message: string = 'Select a prompt',
+    serverFilter?: string,
+    registryUrl?: string
+  ): Promise<string> {
+    const cacheKey = serverFilter ? `prompts_${serverFilter}` : 'prompts';
+
+    const prompts = await cache.get(cacheKey, async () => {
+      try {
+        const args = ['list', 'prompts'];
+        if (serverFilter) args.push('--server', serverFilter);
+
+        const result = await executor.execute(args, { registryUrl });
+        return OutputParser.parsePrompts(result.stdout);
+      } catch {
+        return [];
+      }
+    });
+
+    if (prompts.length === 0) {
+      throw new Error(
+        serverFilter
+          ? `No prompts found for server "${serverFilter}"`
+          : 'No prompts available'
+      );
+    }
+
+    return search({
+      message,
+      source: async (input) => {
+        const filtered = input
+          ? prompts.filter(p =>
+              p.canonicalName.toLowerCase().includes(input.toLowerCase()) ||
+              (p.description && p.description.toLowerCase().includes(input.toLowerCase()))
+            )
+          : prompts;
+
+        return filtered.map(p => ({
+          value: p.canonicalName,
+          name: p.canonicalName,
+          description: p.description || `Prompt from ${p.serverName}`,
+        }));
+      },
+    });
+  }
 }
