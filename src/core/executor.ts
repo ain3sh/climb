@@ -5,7 +5,6 @@
 
 import pty, { IPty } from 'node-pty';
 import { EventEmitter } from 'events';
-import os from 'os';
 
 export interface ExecutorOptions {
   timeout?: number;
@@ -53,19 +52,12 @@ export class MCPJungleExecutor extends EventEmitter {
     }
 
     return new Promise((resolve, reject) => {
+      let timeoutId: NodeJS.Timeout | null = null;
+      
       try {
-        // Determine shell based on OS
-        const shell = os.platform() === 'win32' ? 'powershell.exe' : 'bash';
-        const isWindows = os.platform() === 'win32';
-
-        // Build command string
-        const command = isWindows
-          ? `mcpjungle ${finalArgs.join(' ')}`
-          : `mcpjungle ${finalArgs.map(arg => 
-              arg.includes(' ') ? `"${arg}"` : arg
-            ).join(' ')}`;
-
-        this.ptyProcess = pty.spawn(shell, [], {
+        // FIXED: Spawn mcpjungle directly, not through a shell!
+        // This way the process exits when the command completes
+        this.ptyProcess = pty.spawn('mcpjungle', finalArgs, {
           name: 'xterm-color',
           cols: 120,
           rows: 30,
@@ -78,9 +70,6 @@ export class MCPJungleExecutor extends EventEmitter {
           encoding: (options.encoding || 'utf8') as BufferEncoding,
         });
 
-        // Write command to shell
-        this.ptyProcess.write(command + (isWindows ? '\r\n' : '\n'));
-
         // Capture output
         this.ptyProcess.onData((data: string) => {
           stdout += data;
@@ -91,10 +80,16 @@ export class MCPJungleExecutor extends EventEmitter {
         this.ptyProcess.onExit(({ exitCode, signal }) => {
           const duration = Date.now() - startTime;
           
+          // Clear timeout on exit
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
+          
           this.ptyProcess = null;
 
-          // Clean up the output (remove command echo and prompt)
-          const cleanStdout = this.cleanOutput(stdout, command);
+          // Clean ANSI codes but keep the output intact (no shell prompts to remove)
+          const cleanStdout = stdout.trim();
 
           if (exitCode === 0) {
             resolve({
@@ -114,43 +109,24 @@ export class MCPJungleExecutor extends EventEmitter {
 
         // Timeout handling
         const timeout = options.timeout || 30000; // 30s default
-        const timeoutId = setTimeout(() => {
+        timeoutId = setTimeout(() => {
           if (this.ptyProcess) {
             this.ptyProcess.kill();
+            this.ptyProcess = null;
             reject(new Error(`Command timeout exceeded (${timeout}ms)`));
           }
         }, timeout);
 
-        // Clear timeout on completion
-        this.once('data', () => clearTimeout(timeoutId));
-
       } catch (error) {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
         reject(error);
       }
     });
   }
 
-  /**
-   * Clean output by removing command echo and prompts
-   */
-  private cleanOutput(output: string, command: string): string {
-    let cleaned = output;
 
-    // Remove command echo
-    const commandIndex = cleaned.indexOf(command);
-    if (commandIndex !== -1) {
-      cleaned = cleaned.substring(commandIndex + command.length);
-    }
-
-    // Remove trailing shell prompts (PS1, bash prompts, etc.)
-    cleaned = cleaned
-      .replace(/\r\n/g, '\n') // Normalize line endings
-      .replace(/^\s*[\r\n]+/, '') // Remove leading whitespace
-      .replace(/\s*(\$|>|PS\s+[^\s]+>)\s*$/gm, '') // Remove shell prompts
-      .trim();
-
-    return cleaned;
-  }
 
   /**
    * Kill the current process
