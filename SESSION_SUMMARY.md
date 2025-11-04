@@ -1,8 +1,8 @@
 # 🎉 JungleCTL Session Summary
 
 **Date**: 2025-11-04  
-**Status**: ✅ MVP v1.0 + Phase 3 Complete  
-**Commits**: 6 (3 MVP + 3 Phase 3)
+**Status**: ✅ MVP v1.0 + Phase 3 + Phase 4 Complete  
+**Commits**: 10 (3 MVP + 4 Phase 3 + 3 Phase 4)
 
 ---
 
@@ -112,6 +112,48 @@ A **beautiful, performant terminal UI** that wraps MCPJungle CLI to eliminate:
    - ✅ Enhanced schema parser (reconstructs from fragments)
    - ✅ Additional prompt helpers (selectGroup, selectPrompt)
    - ✅ Result formatters for all content types
+
+---
+
+#### Phase 4: Config Persistence & Polish (Completed This Session!) 🎨
+
+1. **Configuration Persistence** 💾
+   - ✅ Config file management (~/.junglectl/config.json)
+   - ✅ Load/save with JSON validation
+   - ✅ Schema validation (URL, TTL ranges, timeouts)
+   - ✅ Merge user config with defaults (user overrides)
+   - ✅ First-run detection and welcome message
+   - ✅ Version field for future migrations
+   - ✅ Graceful fallback to defaults on errors
+   - ✅ Config directory auto-creation
+
+2. **Interactive Settings Editor** ⚙️
+   - ✅ Complete settings submenu (7 options)
+   - ✅ View configuration with formatted display
+   - ✅ Edit registry URL with URL validation
+   - ✅ Edit cache TTLs (individual or all, 1-300s range)
+   - ✅ Edit theme (color selection + toggle colors)
+   - ✅ Edit timeouts (default and invoke, 1-300s range)
+   - ✅ Reset to defaults with confirmation
+   - ✅ All changes persist immediately
+   - ✅ Shows current values in menus
+
+3. **Enhanced Error Messages** 🛡️
+   - ✅ Detailed troubleshooting hints for all errors
+   - ✅ Numbered step-by-step guidance
+   - ✅ Specific commands to run
+   - ✅ References to Settings where appropriate
+   - ✅ New ConfigError class
+   - ✅ New PermissionError class
+   - ✅ 5-step troubleshooting for ServerConnectionError
+   - ✅ 4-step guidance for ResourceNotFoundError
+   - ✅ Timeout adjustment hints in TimeoutError
+
+4. **New Configuration Fields** 🔧
+   - ✅ Version field (1.0.0) for future migrations
+   - ✅ Timeout settings (default: 30s, invoke: 60s)
+   - ✅ All existing settings now user-configurable
+   - ✅ Config file location documented in UI
 
 ---
 
