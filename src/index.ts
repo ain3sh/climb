@@ -11,6 +11,9 @@ import { MCPJungleExecutor } from './core/executor.js';
 import { OutputParser } from './core/parser.js';
 import { registerServerInteractive } from './commands/register.js';
 import { browseInteractive, listServers, listTools } from './commands/list.js';
+import { invokeToolInteractive } from './commands/invoke.js';
+import { groupsMenuInteractive } from './commands/groups.js';
+import { enableDisableMenuInteractive } from './commands/enable-disable.js';
 import { DEFAULT_CONFIG } from './types/config.js';
 import chalk from 'chalk';
 
@@ -68,9 +71,24 @@ async function mainMenu(): Promise<void> {
     try {
       const action = await Prompts.select('What would you like to do?', [
         {
+          value: 'invoke',
+          name: '🚀 Invoke Tool',
+          description: 'Execute tool with interactive input',
+        },
+        {
           value: 'browse',
           name: '📋 Browse Resources',
           description: 'View servers, tools, groups, prompts',
+        },
+        {
+          value: 'groups',
+          name: '📦 Manage Tool Groups',
+          description: 'Create, view, and delete tool groups',
+        },
+        {
+          value: 'enable-disable',
+          name: '⚡ Enable/Disable',
+          description: 'Manage tool and server status',
         },
         {
           value: 'register',
@@ -102,8 +120,20 @@ async function mainMenu(): Promise<void> {
       console.log(); // Spacing
 
       switch (action) {
+        case 'invoke':
+          await invokeToolInteractive(config.registryUrl);
+          break;
+
         case 'browse':
           await browseInteractive(config.registryUrl);
+          break;
+
+        case 'groups':
+          await groupsMenuInteractive(config.registryUrl);
+          break;
+
+        case 'enable-disable':
+          await enableDisableMenuInteractive(config.registryUrl);
           break;
 
         case 'register':
