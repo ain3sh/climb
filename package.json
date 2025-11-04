@@ -8,13 +8,24 @@
     "junglectl": "./dist/index.js",
     "jctl": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "docs/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+    "USAGE.md",
+    "INSTALLATION.md"
+  ],
   "scripts": {
     "dev": "tsx src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
     "watch": "tsc --watch",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "npm run type-check && npm run build",
+    "pack-test": "npm pack && tar -tzf junglectl-1.0.0.tgz | head -30"
   },
   "keywords": [
     "mcp",
@@ -22,10 +33,23 @@
     "cli",
     "interactive",
     "terminal",
-    "tui"
+    "tui",
+    "tool-invocation",
+    "developer-tools",
+    "mcp-client",
+    "schema",
+    "autocomplete"
   ],
   "author": "Ainesh",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/username/junglectl.git"
+  },
+  "bugs": {
+    "url": "https://github.com/username/junglectl/issues"
+  },
+  "homepage": "https://github.com/username/junglectl#readme",
   "engines": {
     "node": ">=18.0.0"
   },
