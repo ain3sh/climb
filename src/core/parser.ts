@@ -156,32 +156,98 @@ export class OutputParser {
 
   /**
    * Parse `mcpjungle usage <tool>` to extract tool schema
+   * 
+   * MCPJungle outputs individual parameter JSON fragments, not a complete schema.
+   * We need to reconstruct the full JSON Schema object.
+   * 
+   * Format:
+   * ```
+   * tool__name
+   * Description
+   * 
+   * Input Parameters:
+   * =============================
+   * paramName (required|optional)
+   * {
+   *   "type": "string",
+   *   "description": "..."
+   * }
+   * =============================
+   * ```
    */
   static parseToolSchema(rawOutput: string): ToolSchema | null {
-    const clean = stripAnsi(rawOutput);
+    const clean = stripAnsi(rawOutput).trim();
 
-    try {
-      // Look for JSON schema in output
-      const jsonMatch = clean.match(/\{[\s\S]*?"type"\s*:\s*"object"[\s\S]*?\}/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
-
-      // Alternative: look for input schema section
-      const schemaMatch = clean.match(/Input Schema:[\s\S]*?(\{[\s\S]*?\})/);
-      if (schemaMatch) {
-        return JSON.parse(schemaMatch[1]!);
-      }
-    } catch (error) {
-      // Fallback: extract basic info from text
-      return this.parseSchemaFromText(clean);
+    // Check if tool has no parameters
+    if (clean.includes('does not require any input parameters')) {
+      return {
+        type: 'object',
+        properties: {},
+        required: [],
+      };
     }
 
-    return null;
+    // Check if Input Parameters section exists
+    if (!clean.includes('Input Parameters:')) {
+      return null;
+    }
+
+    const schema: ToolSchema = {
+      type: 'object',
+      properties: {},
+      required: [],
+    };
+
+    try {
+      // Extract parameters section
+      const paramsSection = clean.split('Input Parameters:')[1];
+      if (!paramsSection) return null;
+
+      // Split by separator lines (=== or ---)
+      const paramBlocks = paramsSection.split(/={3,}|−{3,}/);
+
+      for (const block of paramBlocks) {
+        const trimmed = block.trim();
+        if (!trimmed || trimmed.length < 5) continue;
+
+        // Extract parameter name and required status
+        // Format: "paramName (required)" or "paramName (optional)"
+        const nameMatch = trimmed.match(/^([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^)]+)\)/);
+        if (!nameMatch) continue;
+
+        const [, paramName, requiredStatus] = nameMatch;
+        if (!paramName) continue;
+
+        // Extract JSON schema fragment
+        const jsonMatch = trimmed.match(/\{[\s\S]*?\}/);
+        if (!jsonMatch) continue;
+
+        try {
+          const propSchema = JSON.parse(jsonMatch[0]);
+          schema.properties![paramName] = propSchema;
+
+          // Add to required array if marked as required
+          if (requiredStatus?.toLowerCase().includes('required')) {
+            schema.required!.push(paramName);
+          }
+        } catch (jsonError) {
+          // Skip invalid JSON fragments
+          continue;
+        }
+      }
+
+      // Return schema only if we found at least one property
+      return Object.keys(schema.properties!).length > 0 ? schema : null;
+
+    } catch (error) {
+      // Fallback to text parsing
+      return this.parseSchemaFromText(clean);
+    }
   }
 
   /**
    * Fallback schema parser from descriptive text
+   * Used when JSON parsing fails
    */
   private static parseSchemaFromText(text: string): ToolSchema | null {
     const schema: ToolSchema = {
@@ -190,16 +256,21 @@ export class OutputParser {
       required: [],
     };
 
-    // Look for parameter descriptions
-    const paramMatches = text.matchAll(/[-•]\s*(\w+)\s*\((\w+)\)(?:\s*:\s*(.+))?/g);
+    // Look for parameter lines: "paramName (required)"
+    const paramMatches = text.matchAll(/([a-zA-Z_][a-zA-Z0-9_]*)\s*\((required|optional)\)/gi);
     
     for (const match of paramMatches) {
-      const [, name, type, desc] = match;
-      if (name && type) {
+      const [, name, requiredStatus] = match;
+      if (name) {
+        // Default to string type if we can't determine
         schema.properties![name] = {
-          type: type.toLowerCase(),
-          description: desc?.trim(),
+          type: 'string',
+          description: `Parameter: ${name}`,
         };
+
+        if (requiredStatus?.toLowerCase() === 'required') {
+          schema.required!.push(name);
+        }
       }
     }
 

@@ -30,7 +30,7 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": false,
-    "noImplicitOverride": true,
+    "noImplicitOverride": false,
     
     /* Completeness */
     "skipLibCheck": true,
