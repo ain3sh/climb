@@ -111,41 +111,55 @@ export async function browseInteractive(registryUrl?: string): Promise<void> {
   const resourceHandler = new ResourceHandler(registryUrl);
 
   while (true) {
-    // Build menu dynamically from discovered 'list' subcommands
-    let choices;
     try {
-      choices = await menuBuilder.buildSubmenu('list');
-    } catch {
-      // Fallback to hardcoded if introspection fails
-      choices = [
-        { value: 'servers', name: '🔌 Servers', description: 'View registered servers' },
-        { value: 'tools', name: '🔧 Tools', description: 'Browse available tools' },
-        { value: 'groups', name: '📦 Tool Groups', description: 'Browse tool groups' },
-        { value: 'prompts', name: '💬 Prompts', description: 'View available prompts' },
-        { value: 'back', name: '← Back', description: 'Return to main menu' },
-      ];
-    }
-
-    const choice = await Prompts.select('What would you like to browse?', choices);
-
-    if (choice === 'back') break;
-
-    try {
-      // Handle tools separately for filtering option
-      if (choice === 'tools') {
-        await browseTools(registryUrl);
-      } else {
-        // Generic handler for any other resource type
-        await resourceHandler.listResource(choice, { registryUrl });
+      console.log(chalk.gray('Press ESC to go back\n'));
+      
+      // Build menu dynamically from discovered 'list' subcommands
+      let choices;
+      try {
+        choices = await menuBuilder.buildSubmenu('list');
+      } catch {
+        // Fallback to hardcoded if introspection fails
+        choices = [
+          { value: 'servers', name: '🔌 Servers', description: 'View registered servers' },
+          { value: 'tools', name: '🔧 Tools', description: 'Browse available tools' },
+          { value: 'groups', name: '📦 Tool Groups', description: 'Browse tool groups' },
+          { value: 'prompts', name: '💬 Prompts', description: 'View available prompts' },
+          { value: 'back', name: '← Back', description: 'Return to main menu' },
+        ];
       }
 
-      // Pause before returning to menu
-      await Prompts.confirm('Continue?', true);
+      const choice = await Prompts.select('What would you like to browse?', choices);
+
+      if (choice === 'back') break;
+
+      try {
+        // Handle tools separately for filtering option
+        if (choice === 'tools') {
+          await browseTools(registryUrl);
+        } else {
+          // Generic handler for any other resource type
+          await resourceHandler.listResource(choice, { registryUrl });
+        }
+
+        // Pause before returning to menu
+        await Prompts.confirm('Continue?', true);
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          // User pressed ESC in submenu - go back
+          break;
+        }
+        if (error instanceof Error) {
+          console.error(Formatters.error(error.message));
+        }
+        await Prompts.confirm('Continue?', true);
+      }
     } catch (error) {
-      if (error instanceof Error) {
-        console.error(Formatters.error(error.message));
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        // User pressed ESC on browse menu - go back to main
+        break;
       }
-      await Prompts.confirm('Continue?', true);
+      throw error; // Unexpected error
     }
   }
 }

@@ -76,6 +76,7 @@ async function mainMenu() {
     const menuBuilder = new DynamicMenuBuilder(introspector);
     while (true) {
         try {
+            console.log(chalk.gray('Use arrow keys to navigate, ESC to stay in menu, Ctrl+C to exit\n'));
             let menuChoices;
             try {
                 menuChoices = await menuBuilder.buildMainMenu();
@@ -145,6 +146,12 @@ async function mainMenu() {
         }
         catch (error) {
             if (error instanceof Error) {
+                if (error.name === 'ExitPromptError') {
+                    console.log();
+                    console.log(chalk.gray('ESC pressed - staying in main menu'));
+                    console.log(chalk.gray('Use Ctrl+C to exit, or select Exit from menu\n'));
+                    continue;
+                }
                 console.error('\n' + Formatters.error(error.message));
                 await Prompts.confirm('\nPress Enter to continue', true);
             }

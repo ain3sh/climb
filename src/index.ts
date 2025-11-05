@@ -105,6 +105,8 @@ async function mainMenu(): Promise<void> {
   // Main loop
   while (true) {
     try {
+      console.log(chalk.gray('Use arrow keys to navigate, ESC to stay in menu, Ctrl+C to exit\n'));
+      
       // Build menu dynamically from MCPJungle structure
       let menuChoices;
       try {
@@ -201,6 +203,14 @@ async function mainMenu(): Promise<void> {
 
     } catch (error) {
       if (error instanceof Error) {
+        if (error.name === 'ExitPromptError') {
+          // User pressed ESC or Ctrl+C on main menu
+          console.log(); // New line
+          console.log(chalk.gray('ESC pressed - staying in main menu'));
+          console.log(chalk.gray('Use Ctrl+C to exit, or select Exit from menu\n'));
+          // Just continue - stay in the main menu loop
+          continue;
+        }
         console.error('\n' + Formatters.error(error.message));
         await Prompts.confirm('\nPress Enter to continue', true);
       } else {

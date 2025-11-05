@@ -103,8 +103,8 @@ export class Prompts {
         if (tools.length === 0) {
             return [];
         }
-        return checkbox({
-            message,
+        const result = await checkbox({
+            message: `${message} (${tools.length} available)`,
             choices: tools.map(t => ({
                 value: t.canonicalName,
                 name: t.canonicalName,
@@ -112,6 +112,7 @@ export class Prompts {
             })),
             pageSize: 15,
         });
+        return result;
     }
     static async selectMultipleServers(message = 'Select servers to include', registryUrl) {
         const servers = await cache.get('servers', async () => {
@@ -126,8 +127,8 @@ export class Prompts {
         if (servers.length === 0) {
             return [];
         }
-        return checkbox({
-            message,
+        const result = await checkbox({
+            message: `${message} (${servers.length} available)`,
             choices: servers.map(s => ({
                 value: s.name,
                 name: s.name,
@@ -135,6 +136,7 @@ export class Prompts {
             })),
             pageSize: 15,
         });
+        return result;
     }
     static async textInput(message, options = {}) {
         return input({

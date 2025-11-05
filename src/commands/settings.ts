@@ -19,44 +19,58 @@ export async function settingsMenuInteractive(config: AppConfig): Promise<AppCon
   let currentConfig = { ...config };
 
   while (true) {
-    const action = await Prompts.select('Settings', [
-      { value: 'view', name: '👁️  View Configuration', description: 'Display current settings' },
-      { value: 'registry', name: '🔗 Edit Registry URL', description: 'Change MCPJungle server URL' },
-      { value: 'cache', name: '⏱️  Edit Cache Settings', description: 'Configure cache TTL values' },
-      { value: 'theme', name: '🎨 Edit Theme', description: 'Customize colors and appearance' },
-      { value: 'timeout', name: '⏲️  Edit Timeouts', description: 'Configure operation timeouts' },
-      { value: 'reset', name: '🔄 Reset to Defaults', description: 'Restore default settings' },
-      { value: 'back', name: '← Back', description: 'Return to main menu' },
-    ]);
-
-    if (action === 'back') break;
-
     try {
-      switch (action) {
-        case 'view':
-          await viewConfig(currentConfig);
-          break;
-        case 'registry':
-          currentConfig = await editRegistryUrl(currentConfig);
-          break;
-        case 'cache':
-          currentConfig = await editCacheSettings(currentConfig);
-          break;
-        case 'theme':
-          currentConfig = await editThemeSettings(currentConfig);
-          break;
-        case 'timeout':
-          currentConfig = await editTimeoutSettings(currentConfig);
-          break;
-        case 'reset':
-          currentConfig = await resetToDefaults();
-          break;
-      }
+      console.log(chalk.gray('Press ESC to go back\n'));
+      
+      const action = await Prompts.select('Settings', [
+        { value: 'view', name: '👁️  View Configuration', description: 'Display current settings' },
+        { value: 'registry', name: '🔗 Edit Registry URL', description: 'Change MCPJungle server URL' },
+        { value: 'cache', name: '⏱️  Edit Cache Settings', description: 'Configure cache TTL values' },
+        { value: 'theme', name: '🎨 Edit Theme', description: 'Customize colors and appearance' },
+        { value: 'timeout', name: '⏲️  Edit Timeouts', description: 'Configure operation timeouts' },
+        { value: 'reset', name: '🔄 Reset to Defaults', description: 'Restore default settings' },
+        { value: 'back', name: '← Back', description: 'Return to main menu' },
+      ]);
 
-      await Prompts.confirm('Continue?', true);
+      if (action === 'back') break;
+
+      try {
+        switch (action) {
+          case 'view':
+            await viewConfig(currentConfig);
+            break;
+          case 'registry':
+            currentConfig = await editRegistryUrl(currentConfig);
+            break;
+          case 'cache':
+            currentConfig = await editCacheSettings(currentConfig);
+            break;
+          case 'theme':
+            currentConfig = await editThemeSettings(currentConfig);
+            break;
+          case 'timeout':
+            currentConfig = await editTimeoutSettings(currentConfig);
+            break;
+          case 'reset':
+            currentConfig = await resetToDefaults();
+            break;
+        }
+
+        await Prompts.confirm('Continue?', true);
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ExitPromptError') {
+          // User pressed ESC in submenu - go back
+          break;
+        }
+        console.error('\n' + formatError(error));
+        await Prompts.confirm('Continue?', true);
+      }
     } catch (error) {
-      console.error('\n' + formatError(error));
-      await Prompts.confirm('Continue?', true);
+      if (error instanceof Error && error.name === 'ExitPromptError') {
+        // User pressed ESC on settings menu - go back to main
+        break;
+      }
+      throw error; // Unexpected error
     }
   }
 

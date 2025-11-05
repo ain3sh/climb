@@ -12,40 +12,52 @@ import os from 'os';
 const executor = new MCPJungleExecutor();
 export async function groupsMenuInteractive(registryUrl) {
     while (true) {
-        const action = await Prompts.select('Tool Groups Management', [
-            { value: 'create', name: '➕ Create Group', description: 'Create a new tool group' },
-            { value: 'view', name: '👁️  View Group Details', description: 'View group composition' },
-            { value: 'list', name: '📋 List All Groups', description: 'Show all tool groups' },
-            { value: 'delete', name: '🗑️  Delete Group', description: 'Remove a tool group' },
-            { value: 'back', name: '← Back', description: 'Return to main menu' },
-        ]);
-        if (action === 'back')
-            break;
         try {
-            switch (action) {
-                case 'create':
-                    await createGroupInteractive(registryUrl);
-                    break;
-                case 'view':
-                    await viewGroupInteractive(registryUrl);
-                    break;
-                case 'list':
-                    await listGroupsInteractive(registryUrl);
-                    break;
-                case 'delete':
-                    await deleteGroupInteractive(registryUrl);
-                    break;
+            console.log(chalk.gray('Press ESC to go back\n'));
+            const action = await Prompts.select('Tool Groups Management', [
+                { value: 'create', name: '➕ Create Group', description: 'Create a new tool group' },
+                { value: 'view', name: '👁️  View Group Details', description: 'View group composition' },
+                { value: 'list', name: '📋 List All Groups', description: 'Show all tool groups' },
+                { value: 'delete', name: '🗑️  Delete Group', description: 'Remove a tool group' },
+                { value: 'back', name: '← Back', description: 'Return to main menu' },
+            ]);
+            if (action === 'back')
+                break;
+            try {
+                switch (action) {
+                    case 'create':
+                        await createGroupInteractive(registryUrl);
+                        break;
+                    case 'view':
+                        await viewGroupInteractive(registryUrl);
+                        break;
+                    case 'list':
+                        await listGroupsInteractive(registryUrl);
+                        break;
+                    case 'delete':
+                        await deleteGroupInteractive(registryUrl);
+                        break;
+                }
+                await Prompts.confirm('Continue?', true);
             }
-            await Prompts.confirm('Continue?', true);
+            catch (error) {
+                if (error instanceof Error && error.name === 'ExitPromptError') {
+                    break;
+                }
+                if (error instanceof UserCancelledError) {
+                    console.log(chalk.yellow('\n✗ Operation cancelled'));
+                }
+                else {
+                    console.error('\n' + formatError(error));
+                }
+                await Prompts.confirm('Continue?', true);
+            }
         }
         catch (error) {
-            if (error instanceof UserCancelledError) {
-                console.log(chalk.yellow('\n✗ Operation cancelled'));
+            if (error instanceof Error && error.name === 'ExitPromptError') {
+                break;
             }
-            else {
-                console.error('\n' + formatError(error));
-            }
-            await Prompts.confirm('Continue?', true);
+            throw error;
         }
     }
 }

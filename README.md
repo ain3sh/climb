@@ -231,6 +231,38 @@ Edit from Settings menu or manually edit config file.
 
 ---
 
+## ⌨️ Keyboard Shortcuts
+
+JungleCTL supports intuitive keyboard navigation:
+
+**Navigation:**
+- `↑↓` or `j/k` - Navigate through options
+- `Enter` - Select/confirm current option  
+- **`ESC`** - Go back to previous menu (never exits app)
+- `Ctrl+C` - Exit application from main menu
+
+**Multi-Select (Checkboxes):**
+- `Space` - Toggle current item on/off
+- `a` - Toggle all items
+- `i` - Invert selection
+- `Enter` - Confirm selection
+- **`ESC`** - Cancel and go back
+
+**Search/Filter:**
+- Type to start filtering
+- `↑↓` - Navigate filtered results
+- `Enter` - Select item
+- **`ESC`** - Cancel search
+
+**Text Input:**
+- `Ctrl+U` - Clear line
+- `Ctrl+K` - Clear to end
+- **`ESC`** - Cancel input
+
+💡 **Tip:** ESC always goes back one level, Ctrl+C exits the app. Selection counts show "5 selected of 23" in multi-select mode!
+
+---
+
 ## 📚 Documentation
 
 - **[Installation Guide](./INSTALLATION.md)** - Complete setup instructions

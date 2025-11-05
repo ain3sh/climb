@@ -8,40 +8,52 @@ import chalk from 'chalk';
 const executor = new MCPJungleExecutor();
 export async function enableDisableMenuInteractive(registryUrl) {
     while (true) {
-        const action = await Prompts.select('Enable/Disable Management', [
-            { value: 'disable-tool', name: '🔇 Disable Tool', description: 'Disable a specific tool' },
-            { value: 'enable-tool', name: '🔊 Enable Tool', description: 'Enable a specific tool' },
-            { value: 'disable-server', name: '🔇 Disable Server', description: 'Disable all tools from a server' },
-            { value: 'enable-server', name: '🔊 Enable Server', description: 'Enable a server' },
-            { value: 'back', name: '← Back', description: 'Return to main menu' },
-        ]);
-        if (action === 'back')
-            break;
         try {
-            switch (action) {
-                case 'disable-tool':
-                    await disableToolInteractive(registryUrl);
-                    break;
-                case 'enable-tool':
-                    await enableToolInteractive(registryUrl);
-                    break;
-                case 'disable-server':
-                    await disableServerInteractive(registryUrl);
-                    break;
-                case 'enable-server':
-                    await enableServerInteractive(registryUrl);
-                    break;
+            console.log(chalk.gray('Press ESC to go back\n'));
+            const action = await Prompts.select('Enable/Disable Management', [
+                { value: 'disable-tool', name: '🔇 Disable Tool', description: 'Disable a specific tool' },
+                { value: 'enable-tool', name: '🔊 Enable Tool', description: 'Enable a specific tool' },
+                { value: 'disable-server', name: '🔇 Disable Server', description: 'Disable all tools from a server' },
+                { value: 'enable-server', name: '🔊 Enable Server', description: 'Enable a server' },
+                { value: 'back', name: '← Back', description: 'Return to main menu' },
+            ]);
+            if (action === 'back')
+                break;
+            try {
+                switch (action) {
+                    case 'disable-tool':
+                        await disableToolInteractive(registryUrl);
+                        break;
+                    case 'enable-tool':
+                        await enableToolInteractive(registryUrl);
+                        break;
+                    case 'disable-server':
+                        await disableServerInteractive(registryUrl);
+                        break;
+                    case 'enable-server':
+                        await enableServerInteractive(registryUrl);
+                        break;
+                }
+                await Prompts.confirm('Continue?', true);
             }
-            await Prompts.confirm('Continue?', true);
+            catch (error) {
+                if (error instanceof Error && error.name === 'ExitPromptError') {
+                    break;
+                }
+                if (error instanceof UserCancelledError) {
+                    console.log(chalk.yellow('\n✗ Operation cancelled'));
+                }
+                else {
+                    console.error('\n' + formatError(error));
+                }
+                await Prompts.confirm('Continue?', true);
+            }
         }
         catch (error) {
-            if (error instanceof UserCancelledError) {
-                console.log(chalk.yellow('\n✗ Operation cancelled'));
+            if (error instanceof Error && error.name === 'ExitPromptError') {
+                break;
             }
-            else {
-                console.error('\n' + formatError(error));
-            }
-            await Prompts.confirm('Continue?', true);
+            throw error;
         }
     }
 }

@@ -148,8 +148,8 @@ export class Prompts {
       return [];
     }
 
-    return checkbox({
-      message,
+    const result = await checkbox({
+      message: `${message} (${tools.length} available)`,
       choices: tools.map(t => ({
         value: t.canonicalName,
         name: t.canonicalName,
@@ -157,6 +157,8 @@ export class Prompts {
       })),
       pageSize: 15,
     });
+    
+    return result;
   }
 
   /**
@@ -179,8 +181,8 @@ export class Prompts {
       return [];
     }
 
-    return checkbox({
-      message,
+    const result = await checkbox({
+      message: `${message} (${servers.length} available)`,
       choices: servers.map(s => ({
         value: s.name,
         name: s.name,
@@ -188,6 +190,8 @@ export class Prompts {
       })),
       pageSize: 15,
     });
+    
+    return result;
   }
 
   /**
