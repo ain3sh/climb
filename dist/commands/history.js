@@ -7,6 +7,7 @@ import Table from 'cli-table3';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 function getHistoryFilePath() {
     const configDir = path.join(os.homedir(), '.climb');
     return path.join(configDir, 'history.json');
@@ -44,6 +45,8 @@ export async function addToHistory(execution, maxSize = 100) {
 }
 export async function historyBrowserInteractive(config) {
     console.log(Formatters.header('Command History'));
+    process.stdout.write(formatQuickActionsBar());
+    process.stdout.write(formatNavigationHint('navigation'));
     try {
         const history = await loadHistory();
         if (history.length === 0) {
@@ -53,9 +56,10 @@ export async function historyBrowserInteractive(config) {
         }
         while (true) {
             console.log(chalk.bold(`\n📜 Recent Commands (${history.length} total)\n`));
+            const widths = computeHistoryColWidths();
             const table = new Table({
                 head: ['#', 'Command', 'Exit', 'Duration', 'When'],
-                colWidths: [5, 50, 8, 12, 20],
+                colWidths: widths,
                 style: {
                     head: ['cyan'],
                 },
@@ -286,5 +290,14 @@ function formatTimeAgo(date) {
     if (seconds < 604800)
         return `${Math.floor(seconds / 86400)}d ago`;
     return date.toLocaleDateString();
+}
+function computeHistoryColWidths() {
+    const cols = process.stdout.columns || 100;
+    const padding = 6;
+    const usable = Math.max(60, cols - padding);
+    const base = [5, 8, 9, 12, 20];
+    const fixed = base[0] + base[1] + base[2] + base[3];
+    const commandWidth = Math.max(30, usable - fixed);
+    return [base[0], commandWidth, base[1], base[2], base[3]];
 }
 //# sourceMappingURL=history.js.map

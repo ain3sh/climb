@@ -1,10 +1,21 @@
 import Table from 'cli-table3';
 import chalk from 'chalk';
 export class Formatters {
+    static computeColWidths(mins, ratios) {
+        const cols = process.stdout.columns || 100;
+        const padding = 6;
+        const usable = Math.max(40, cols - padding);
+        const minTotal = mins.reduce((a, b) => a + b, 0);
+        const extra = Math.max(0, usable - minTotal);
+        const ratioSum = ratios.reduce((a, b) => a + b, 0) || 1;
+        const widths = mins.map((m, i) => m + Math.floor((ratios[i] / ratioSum) * extra));
+        return widths;
+    }
     static serversTable(servers) {
         if (servers.length === 0) {
             return chalk.yellow('No servers registered');
         }
+        const colWidths = this.computeColWidths([14, 12, 30, 10], [0.2, 0.15, 0.5, 0.15]);
         const table = new Table({
             head: [
                 chalk.cyan('Name'),
@@ -16,7 +27,7 @@ export class Formatters {
                 head: [],
                 border: ['gray'],
             },
-            colWidths: [20, 18, 40, 12],
+            colWidths,
             wordWrap: true,
         });
         for (const server of servers) {
@@ -25,10 +36,12 @@ export class Formatters {
             const status = server.enabled
                 ? chalk.green('✓ Enabled')
                 : chalk.red('✗ Disabled');
+            const urlWidth = Math.max(5, colWidths[2] - 2);
+            const urlText = chalk.gray(this.truncate(urlOrCommand, urlWidth));
             table.push([
                 chalk.white(server.name),
                 chalk.gray(server.transport),
-                chalk.gray(urlOrCommand.slice(0, 38) + (urlOrCommand.length > 38 ? '...' : '')),
+                urlText,
                 status,
             ]);
         }
@@ -38,6 +51,7 @@ export class Formatters {
         if (tools.length === 0) {
             return chalk.yellow('No tools available');
         }
+        const colWidths = this.computeColWidths([24, 14, 36, 8], [0.45, 0.2, 0.25, 0.1]);
         const table = new Table({
             head: [
                 chalk.cyan('Tool Name'),
@@ -49,7 +63,7 @@ export class Formatters {
                 head: [],
                 border: ['gray'],
             },
-            colWidths: [30, 18, 40, 12],
+            colWidths,
             wordWrap: true,
         });
         for (const tool of tools) {
@@ -57,10 +71,12 @@ export class Formatters {
                 ? chalk.green('✓ On')
                 : chalk.red('✗ Off');
             const desc = tool.description || '-';
+            const nameWidth = Math.max(6, colWidths[0] - 2);
+            const descWidth = Math.max(6, colWidths[2] - 2);
             table.push([
-                chalk.white(tool.canonicalName),
+                chalk.white(this.truncate(tool.canonicalName, nameWidth)),
                 chalk.gray(tool.serverName),
-                chalk.gray(desc.slice(0, 38) + (desc.length > 38 ? '...' : '')),
+                chalk.gray(this.truncate(desc, descWidth)),
                 status,
             ]);
         }
@@ -70,6 +86,7 @@ export class Formatters {
         if (groups.length === 0) {
             return chalk.yellow('No tool groups defined');
         }
+        const colWidths = this.computeColWidths([22, 30, 24], [0.35, 0.4, 0.25]);
         const table = new Table({
             head: [
                 chalk.cyan('Group Name'),
@@ -80,16 +97,19 @@ export class Formatters {
                 head: [],
                 border: ['gray'],
             },
-            colWidths: [25, 40, 35],
+            colWidths,
             wordWrap: true,
         });
         for (const group of groups) {
             const desc = group.description || '-';
             const endpoint = group.endpoint || '-';
+            const nameWidth = Math.max(6, colWidths[0] - 2);
+            const descWidth = Math.max(6, colWidths[1] - 2);
+            const endpWidth = Math.max(6, colWidths[2] - 2);
             table.push([
-                chalk.white(group.name),
-                chalk.gray(desc.slice(0, 38) + (desc.length > 38 ? '...' : '')),
-                chalk.gray(endpoint.slice(0, 33) + (endpoint.length > 33 ? '...' : '')),
+                chalk.white(this.truncate(group.name, nameWidth)),
+                chalk.gray(this.truncate(desc, descWidth)),
+                chalk.gray(this.truncate(endpoint, endpWidth)),
             ]);
         }
         return table.toString();
@@ -98,6 +118,7 @@ export class Formatters {
         if (prompts.length === 0) {
             return chalk.yellow('No prompts available');
         }
+        const colWidths = this.computeColWidths([28, 16, 32], [0.45, 0.2, 0.35]);
         const table = new Table({
             head: [
                 chalk.cyan('Prompt Name'),
@@ -108,15 +129,17 @@ export class Formatters {
                 head: [],
                 border: ['gray'],
             },
-            colWidths: [35, 20, 45],
+            colWidths,
             wordWrap: true,
         });
         for (const prompt of prompts) {
             const desc = prompt.description || '-';
+            const nameWidth = Math.max(6, colWidths[0] - 2);
+            const descWidth = Math.max(6, colWidths[2] - 2);
             table.push([
-                chalk.white(prompt.canonicalName),
+                chalk.white(this.truncate(prompt.canonicalName, nameWidth)),
                 chalk.gray(prompt.serverName),
-                chalk.gray(desc),
+                chalk.gray(this.truncate(desc, descWidth)),
             ]);
         }
         return table.toString();

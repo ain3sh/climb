@@ -12,6 +12,7 @@ import { ResourceHandler } from '../core/resource-handler.js';
 import { CLIIntrospector } from '../core/introspection.js';
 import { DynamicMenuBuilder } from '../core/menu-builder.js';
 import chalk from 'chalk';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 
 const executor = new MCPJungleExecutor();
 
@@ -125,6 +126,8 @@ export async function browseInteractive(registryUrl?: string): Promise<void> {
   while (true) {
     try {
       console.log(chalk.gray('Press ESC to go back\n'));
+      process.stdout.write(formatQuickActionsBar());
+      process.stdout.write(formatNavigationHint('navigation'));
       
       // Build menu dynamically from discovered 'list' subcommands
       let choices;

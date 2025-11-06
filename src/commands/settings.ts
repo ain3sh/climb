@@ -10,6 +10,7 @@ import type { AppConfig } from '../types/config.js';
 import { DEFAULT_CONFIG } from '../types/config.js';
 import { formatError } from '../utils/errors.js';
 import chalk from 'chalk';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 
 /**
  * Settings menu
@@ -21,26 +22,28 @@ export async function settingsMenuInteractive(config: AppConfig): Promise<AppCon
   while (true) {
     try {
       console.log(chalk.gray('Press ESC to go back\n'));
+      process.stdout.write(formatQuickActionsBar());
+      process.stdout.write(formatNavigationHint('navigation'));
       
       // Build settings menu (dynamic based on CLI)
       const settingsChoices = [
         { value: 'view', name: '👁️  View Configuration', description: 'Display current settings' },
-        { value: 'cli', name: '🔄 Switch CLI', description: 'Change target CLI tool' },
+        { value: 'cli', name: `🔄 Switch CLI (current: ${currentConfig.targetCLI})`, description: 'Change target CLI tool' },
       ];
 
       // Add MCP-specific registry option
       if (currentConfig.targetCLI === 'mcpjungle') {
         settingsChoices.push({
           value: 'registry',
-          name: '🔗 Edit Registry URL',
+          name: `🔗 Edit Registry URL (current: ${currentConfig.registryUrl ?? 'http://127.0.0.1:8080'})`,
           description: 'Change MCPJungle server URL',
         });
       }
 
       settingsChoices.push(
-        { value: 'cache', name: '⏱️  Edit Cache Settings', description: 'Configure cache TTL values' },
-        { value: 'theme', name: '🎨 Edit Theme', description: 'Customize colors and appearance' },
-        { value: 'timeout', name: '⏲️  Edit Timeouts', description: 'Configure operation timeouts' },
+        { value: 'cache', name: `⏱️  Edit Cache Settings (structure ${currentConfig.cacheTTL.structure / 1000}s, output ${currentConfig.cacheTTL.output / 1000}s)`, description: 'Configure cache TTL values' },
+        { value: 'theme', name: `🎨 Edit Theme (color: ${currentConfig.theme.primaryColor}, colors: ${currentConfig.theme.enableColors ? 'on' : 'off'})`, description: 'Customize colors and appearance' },
+        { value: 'timeout', name: `⏲️  Edit Timeouts (default ${currentConfig.timeout.default / 1000}s, introspection ${currentConfig.timeout.introspection / 1000}s, execute ${currentConfig.timeout.execute / 1000}s)`, description: 'Configure operation timeouts' },
         { value: 'reset', name: '🔄 Reset to Defaults', description: 'Restore default settings' },
         { value: 'back', name: '← Back', description: 'Return to main menu' }
       );

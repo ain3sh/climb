@@ -6,9 +6,12 @@ import { OutputParser } from '../core/parser.js';
 import { buildDynamicForm, buildManualJsonInput } from '../ui/form-builder.js';
 import { SchemaParsingError, ToolInvocationError, formatError, UserCancelledError, } from '../utils/errors.js';
 import chalk from 'chalk';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 const executor = new MCPJungleExecutor();
 export async function invokeToolInteractive(registryUrl) {
     console.log(Formatters.header('Invoke Tool'));
+    process.stdout.write(formatQuickActionsBar());
+    process.stdout.write(formatNavigationHint('navigation'));
     try {
         console.log(chalk.bold('🔧 Select Tool\n'));
         const tool = await Prompts.selectTool('Which tool do you want to invoke?', undefined, registryUrl);

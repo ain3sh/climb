@@ -7,7 +7,7 @@ pnpm-debug.log*
 
 # Build outputs
 # NOTE: dist/ is NOT ignored for npx compatibility from GitHub
-# For npx github:ain3sh/junglectl to work, dist/ must be committed
+# For npx github:ain3sh/climb to work, dist/ must be committed
 # dist/
 build/
 *.tsbuildinfo
@@ -41,6 +41,13 @@ coverage/
 tmp/
 temp/
 .cache/
+
+# Local runtime artifacts not for source control
+mcpjungle-server.log
+*.tgz
+
+# Local databases / runtime state (not for source control)
+mcpjungle.db
 
 # OS
 Thumbs.db

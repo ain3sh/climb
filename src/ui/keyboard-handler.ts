@@ -96,7 +96,7 @@ export function formatSelectionCount(selected: number, total: number): string {
  * Help overlay content
  */
 export const HELP_CONTENT = `
-${chalk.cyan.bold('📖 JungleCTL Keyboard Shortcuts')}
+${chalk.cyan.bold('📖 climb Keyboard Shortcuts')}
 
 ${chalk.bold('Navigation:')}
   ↑/↓         Navigate through options

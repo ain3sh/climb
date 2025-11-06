@@ -14,6 +14,7 @@ import Table from 'cli-table3';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 
 /**
  * Get history file path
@@ -85,6 +86,8 @@ export async function addToHistory(
  */
 export async function historyBrowserInteractive(config: AppConfig): Promise<void> {
   console.log(Formatters.header('Command History'));
+  process.stdout.write(formatQuickActionsBar());
+  process.stdout.write(formatNavigationHint('navigation'));
 
   try {
     const history = await loadHistory();
@@ -99,9 +102,10 @@ export async function historyBrowserInteractive(config: AppConfig): Promise<void
       // Display history table
       console.log(chalk.bold(`\n📜 Recent Commands (${history.length} total)\n`));
 
+      const widths = computeHistoryColWidths();
       const table = new Table({
         head: ['#', 'Command', 'Exit', 'Duration', 'When'],
-        colWidths: [5, 50, 8, 12, 20],
+        colWidths: widths,
         style: {
           head: ['cyan'],
         },
@@ -396,4 +400,18 @@ function formatTimeAgo(date: Date): string {
   if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
   if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
   return date.toLocaleDateString();
+}
+
+/**
+ * Compute responsive column widths for history table
+ */
+function computeHistoryColWidths(): number[] {
+  const cols = process.stdout.columns || 100;
+  const padding = 6;
+  const usable = Math.max(60, cols - padding);
+  const base = [5, 8, 9, 12, 20]; // initial idea for [#, Exit, Duration, When, Command]
+  // We'll map to [#, Command, Exit, Duration, When]
+  const fixed = base[0]! + base[1]! + base[2]! + base[3]!; // non-command approx
+  const commandWidth = Math.max(30, usable - fixed);
+  return [base[0]!, commandWidth, base[1]!, base[2]!, base[3]!];
 }

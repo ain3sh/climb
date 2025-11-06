@@ -20,6 +20,24 @@ import { CLIIntrospector } from './core/introspection.js';
 import { DynamicMenuBuilder } from './core/menu-builder.js';
 import type { AppConfig } from './types/config.js';
 import chalk from 'chalk';
+import { formatQuickActionsBar, formatNavigationHint } from './ui/keyboard-handler.js';
+
+// Non-interactive discovery command for LLMs
+async function maybeRunDiscover(): Promise<boolean> {
+  const argv = process.argv.slice(2);
+  if (argv[0] !== 'discover') return false;
+
+  const { runDiscover } = await import('./commands/discover.js');
+  const args = argv.slice(1);
+  try {
+    await runDiscover(args);
+    process.exit(0);
+  } catch (err) {
+    console.error((err as Error).message || String(err));
+    process.exit(1);
+  }
+  return true; // unreachable, but for type completeness
+}
 
 /**
  * Show first-run welcome message
@@ -37,6 +55,8 @@ async function showWelcomeIfFirstRun(): Promise<void> {
  * Main menu
  */
 async function mainMenu(): Promise<void> {
+  // If invoked as `climb discover ...`, run discovery and exit
+  if (await maybeRunDiscover()) return;
   // Load configuration
   let config: AppConfig;
   try {
@@ -118,6 +138,8 @@ async function mainMenu(): Promise<void> {
   while (true) {
     try {
       console.log(chalk.gray('Use arrow keys to navigate, ESC to stay in menu, Ctrl+C to exit\n'));
+      process.stdout.write(formatQuickActionsBar());
+      process.stdout.write(formatNavigationHint('navigation'));
       
       // Build menu based on targetCLI
       let menuChoices;
@@ -283,6 +305,8 @@ async function mainMenu(): Promise<void> {
       }
       
       console.log();
+      process.stdout.write(formatQuickActionsBar());
+      process.stdout.write(formatNavigationHint('navigation'));
 
     } catch (error) {
       if (error instanceof Error) {
