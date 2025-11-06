@@ -303,11 +303,7 @@ climb supports intuitive keyboard navigation:
 
 ## 📚 Documentation
 
-- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
-- **[WEEK4_SEA_COMPLETE.md](./WEEK4_SEA_COMPLETE.md)** - SEA build pipeline implementation
-- **[SEA_MIGRATION_COMPLETE.md](./SEA_MIGRATION_COMPLETE.md)** - node-pty → child_process migration
-- **[QOL_IMPROVEMENTS.md](./QOL_IMPROVEMENTS.md)** - Keyboard navigation enhancements
-- **[docs/](./docs/)** - Architecture and phase completion documentation
+- **[CHANGELOG.md](./CHANGELOG.md)** - Version history
 
 ---
 
@@ -416,7 +412,7 @@ Contributions welcome! climb is a universal CLI explorer built with extensibilit
 - Test coverage
 - Documentation improvements
 
-See [WEEK4_SEA_COMPLETE.md](./WEEK4_SEA_COMPLETE.md) for build pipeline details.
+ 
 
 ---
 

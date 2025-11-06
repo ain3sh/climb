@@ -53,7 +53,7 @@ export async function registerServerInteractive(registryUrl) {
         console.log(chalk.green(`\n✓ Server "${name}" registered successfully!`));
         console.log(chalk.gray(`\nYou can now:`));
         console.log(chalk.gray(`  • List tools: mcpjungle list tools --server ${name}`));
-        console.log(chalk.gray(`  • View in JungleCTL: Browse Tools menu\n`));
+        console.log(chalk.gray(`  • View in climb: Browse Tools menu\n`));
     }
     catch (error) {
         if (error instanceof Error) {
