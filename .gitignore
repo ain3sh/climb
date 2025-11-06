@@ -35,12 +35,14 @@ sea-config.json
 # Testing
 coverage/
 .nyc_output/
+Testing/
 
 # Temp files
 *.log
 tmp/
 temp/
 .cache/
+gz[0-9]*
 
 # Local runtime artifacts not for source control
 mcpjungle-server.log
