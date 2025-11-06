@@ -1,5 +1,6 @@
 import type { MCPServer, MCPTool, ToolGroup, MCPPrompt } from '../types/mcpjungle.js';
 export declare class Formatters {
+    private static computeColWidths;
     static serversTable(servers: MCPServer[]): string;
     static toolsTable(tools: MCPTool[]): string;
     static groupsTable(groups: ToolGroup[]): string;

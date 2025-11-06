@@ -11,12 +11,15 @@ import { CLIIntrospector } from '../core/introspection.js';
 import type { AppConfig } from '../types/config.js';
 import type { CommandEntity } from '../types/cli.js';
 import chalk from 'chalk';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 
 /**
  * Main explore workflow - discover and execute CLI commands
  */
 export async function exploreCommandsInteractive(config: AppConfig): Promise<void> {
   console.log(Formatters.header(`Explore ${config.targetCLI} Commands`));
+  process.stdout.write(formatQuickActionsBar());
+  process.stdout.write(formatNavigationHint('navigation'));
 
   try {
     // Step 1: Introspect CLI to get command structure
@@ -79,8 +82,8 @@ async function selectCommand(commands: CommandEntity[], config: AppConfig): Prom
 
   const choices = sortedCommands.map(cmd => ({
     value: cmd.name,
-    name: `${cmd.name}${cmd.hasSubcommands ? ' >' : ''}`,
-    description: `${cmd.description}${config.execution.showConfidence ? ` [${Math.round(cmd.confidence * 100)}%]` : ''}`,
+    name: `${cmd.name}${cmd.hasSubcommands ? ' >' : ''}${config.execution.showConfidence ? ` · ${Math.round(cmd.confidence * 100)}%` : ''}`,
+    description: `${cmd.description}`,
   }));
 
   // Add back option

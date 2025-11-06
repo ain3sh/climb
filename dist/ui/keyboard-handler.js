@@ -47,7 +47,7 @@ export function formatSelectionCount(selected, total) {
     return chalk.cyan(`✓ ${selected} selected`) + chalk.gray(` of ${total}`);
 }
 export const HELP_CONTENT = `
-${chalk.cyan.bold('📖 JungleCTL Keyboard Shortcuts')}
+${chalk.cyan.bold('📖 climb Keyboard Shortcuts')}
 
 ${chalk.bold('Navigation:')}
   ↑/↓         Navigate through options

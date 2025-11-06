@@ -15,6 +15,7 @@ import chalk from 'chalk';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
+import { formatQuickActionsBar, formatNavigationHint } from '../ui/keyboard-handler.js';
 
 const executor = new MCPJungleExecutor();
 
@@ -25,6 +26,8 @@ export async function groupsMenuInteractive(registryUrl?: string): Promise<void>
   while (true) {
     try {
       console.log(chalk.gray('Press ESC to go back\n'));
+      process.stdout.write(formatQuickActionsBar());
+      process.stdout.write(formatNavigationHint('navigation'));
       
       const action = await Prompts.select('Tool Groups Management', [
         { value: 'create', name: '➕ Create Group', description: 'Create a new tool group' },

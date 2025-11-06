@@ -13,6 +13,23 @@ import { loadConfig, saveConfig, isFirstRun, getConfigFilePath } from './core/co
 import { CLIIntrospector } from './core/introspection.js';
 import { DynamicMenuBuilder } from './core/menu-builder.js';
 import chalk from 'chalk';
+import { formatQuickActionsBar, formatNavigationHint } from './ui/keyboard-handler.js';
+async function maybeRunDiscover() {
+    const argv = process.argv.slice(2);
+    if (argv[0] !== 'discover')
+        return false;
+    const { runDiscover } = await import('./commands/discover.js');
+    const args = argv.slice(1);
+    try {
+        await runDiscover(args);
+        process.exit(0);
+    }
+    catch (err) {
+        console.error(err.message || String(err));
+        process.exit(1);
+    }
+    return true;
+}
 async function showWelcomeIfFirstRun() {
     if (await isFirstRun()) {
         console.log(chalk.cyan.bold('\n  🧗 Welcome to climb!\n'));
@@ -22,6 +39,8 @@ async function showWelcomeIfFirstRun() {
     }
 }
 async function mainMenu() {
+    if (await maybeRunDiscover())
+        return;
     let config;
     try {
         config = await loadConfig();
@@ -87,6 +106,8 @@ async function mainMenu() {
     while (true) {
         try {
             console.log(chalk.gray('Use arrow keys to navigate, ESC to stay in menu, Ctrl+C to exit\n'));
+            process.stdout.write(formatQuickActionsBar());
+            process.stdout.write(formatNavigationHint('navigation'));
             let menuChoices;
             let introspector;
             if (config.targetCLI === 'mcpjungle') {
@@ -213,6 +234,8 @@ async function mainMenu() {
                 console.log('  ' + Formatters.statusBar(serverStatus));
             }
             console.log();
+            process.stdout.write(formatQuickActionsBar());
+            process.stdout.write(formatNavigationHint('navigation'));
         }
         catch (error) {
             if (error instanceof Error) {
