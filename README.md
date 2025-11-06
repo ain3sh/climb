@@ -1,239 +1,248 @@
-# 🧗 climb
+# 🧗 **Climb — ascend the arg tree**
 
-**Climb — ascend the arg tree**
+Universal, self-adapting TUI for command-line tools. Stop memorizing flags. Explore, preview, and execute commands for git, docker, npm, kubectl, mcpjungle, and virtually any CLI.
 
-Universal self-adapting TUI for ANY CLI. Stop memorizing commands and flags. climb gives you a beautiful, interactive interface for git, docker, npm, kubectl, and any CLI tool—with autocomplete search, dynamic forms, and command discovery.
+[Releases](/releases) · [Changelog](./CHANGELOG.md) · [License](./LICENSE)
 
 ---
 
-## 🎯 Why climb?
-
-### Universal CLI Explorer
-
-climb adapts to ANY command-line tool—no configuration needed:
+## TL;DR
 
 ```bash
+# End users (no Node.js required)
+curl -fsSL https://raw.githubusercontent.com/ain3sh/climb/main/scripts/install.sh | bash
 climb
-# → Select CLI: git, docker, npm, kubectl, mcpjungle, etc.
-# → Explore commands interactively
-# → View command history
-# → Get help without leaving the TUI
+
+# Developers (Node 18+)
+npm i -g climb-cli   # when published
+climb
 ```
 
-### Before (Manual CLI)
+> **WSL users (Windows):** the Linux installer above works in WSL (Ubuntu/Debian/etc.) exactly the same way. Run it from your WSL shell. It installs to your WSL home (e.g., `/home/<you>/.climb`) and adds `~/.climb/bin` to your WSL PATH. No special Windows steps are required.
+
+---
+
+## Why climb?
+
+**Before**
+
 ```bash
-# Remember git commands and flags
 git commit --amend --no-edit --reuse-message=HEAD
-git rebase --interactive --autosquash origin/main
-
-# Docker with long commands
-docker run --rm -it -v $(pwd):/app -w /app node:18 npm test
-
-# kubectl complexity
+docker run --rm -it -v "$(pwd)":/app -w /app node:18 npm test
 kubectl get pods --all-namespaces --field-selector status.phase=Running
 ```
 
-### After (climb)
+**After**
+
 ```bash
 climb
-# → Switch to git/docker/kubectl
+# → Pick CLI (git/docker/kubectl/…)
 # → Browse commands with confidence scores
-# → Interactive argument input
-# → Command preview before execution
-# → History tracking with re-run
+# → Fill args via forms, preview, run, and re-run from history
 ```
 
 ---
 
-## ✨ Features
+## Features
 
-### Core Capabilities
-- 🔍 **Command Discovery** - Browse commands with confidence scores
-- 🧭 **Interactive Navigation** - Subcommand exploration with breadcrumbs
-- ⚡ **Command History** - Track, re-run, and edit past commands
-- 🎯 **Smart Help Parsing** - Extracts commands from `--help` output
-- 🔄 **CLI Switching** - Instantly switch between git, docker, npm, kubectl, etc.
-
-### User Experience
-- 🔍 **Autocomplete Search** - Find commands instantly with fuzzy matching
-- 🎨 **Beautiful UI** - Color-coded status, loading spinners, formatted tables
-- ⌨️ **Keyboard Navigation** - Vim-style shortcuts (j/k), ESC to go back
-- 📋 **Command Preview** - See the full command before executing
-- 🛡️ **History Tracking** - FIFO rotation with export/clear options
-
-### Technical
-- 🌐 **Cross-Platform** - Linux, macOS, Windows support
-- 📝 **Type-Safe** - TypeScript strict mode with zero errors
-- 🚀 **Self-Adapting** - Works with ANY CLI tool automatically
-- 💾 **Config Migration** - Seamless v1.0 → v2.0 migration (~/.junglectl → ~/.climb)
+| Area              | What you get                                                                   |
+| ----------------- | ------------------------------------------------------------------------------ |
+| Command discovery | Parses `--help`, builds an arg/subcommand tree, ranks commands with confidence |
+| Interactive forms | Guided prompts for args and flags, with safe previews before execution         |
+| Navigation        | Breadcrumbs, fuzzy search, vim keys (j/k), ESC to go back                      |
+| History           | Exit codes, durations, timestamps; re-run/edit; export/clear                   |
+| Multi-CLI         | Switch between git, docker, npm, kubectl, mcpjungle, and more without config   |
+| UX polish         | Colorized output, tables, spinners, sensible defaults                          |
 
 ---
 
-## 🚀 Installation
+## Compatibility
 
-### For End Users (No Node.js Required!)
+| OS                     | CPU       | Install                  | Notes                                                                                                                                            |
+| ---------------------- | --------- | ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Linux (incl. WSL)**  | x64       | Binary, npm              | Works in WSL distributions (Ubuntu/Debian/etc.) via your WSL shell; installs under `/home/<you>/.climb`; use `~/.bashrc` or `~/.zshrc` for PATH. |
+| macOS                  | x64/arm64 | Binary, npm              | First run may trigger Gatekeeper; see Troubleshooting                                                                                            |
+| Windows 10/11 (native) | x64       | Binary, npm (PowerShell) | SmartScreen may warn on unsigned binaries; see Troubleshooting                                                                                   |
 
-**One-line install (Linux/macOS):**
+**Runtime:** Binaries require no Node. For npm/dev, Node ≥ 18 and npm ≥ 9.
+
+---
+
+## Installation
+
+### End users (no Node.js required)
+
+**One-liner (Linux/macOS/WSL)**
+
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ain3sh/climb/main/scripts/install.sh | bash
 ```
 
-**Manual download:**
-Download the appropriate binary from [GitHub Releases](https://github.com/ain3sh/climb/releases):
-- **Linux x64**: `climb-linux-x64`
-- **macOS Intel**: `climb-darwin-x64`
-- **macOS Apple Silicon**: `climb-darwin-arm64`
-- **Windows**: `climb-win32-x64.exe`
+* On **WSL**, run the command inside your WSL shell (e.g., Ubuntu). The installer writes to `~/.climb` inside WSL and updates your WSL shell profile. Launch `climb` from WSL like any other Linux binary.
 
-Then run:
+**Manual download**
+
+1. Grab your binary from [GitHub Releases](https://github.com/ain3sh/climb/releases)
+
+   * Linux x64: `climb-linux-x64`
+   * macOS Intel: `climb-darwin-x64`
+   * macOS Apple Silicon: `climb-darwin-arm64`
+   * Windows: `climb-win32-x64.exe`
+2. Make executable and run:
+
 ```bash
-chmod +x climb-linux-x64      # Make executable (Linux/macOS)
-./climb-linux-x64              # Run
+chmod +x ./climb-linux-x64
+./climb-linux-x64
 ```
 
-### For Contributors & Developers (npm)
+**PATH**
 
-**Prerequisites:**
-- Node.js 18.0.0 or higher
-- npm 9.0.0 or higher
-
-**Global installation:**
 ```bash
-# From npm (once published)
-npm install -g climb-cli
+# Add ~/.climb/bin to PATH (Linux/macOS/WSL)
+echo 'export PATH="$HOME/.climb/bin:$PATH"' >> ~/.bashrc  # or ~/.zshrc
+```
 
-# Run directly with npx
+### Developers & contributors (npm)
+
+Prereqs: Node ≥ 18, npm ≥ 9.
+
+```bash
+# When published
+npm i -g climb-cli
+# Or run without global install
 npx climb-cli
 ```
 
-**Local development:**
+**Local dev**
+
 ```bash
 git clone https://github.com/ain3sh/climb
 cd climb
 npm install
-npm run build
-npm start
+npm run dev       # tsx watch
 ```
-
-### Verify Installation
-
-```bash
-climb --version
-# or
-climb
-```
-
-On first run:
-- Creates config at `~/.climb/config.json`
-- Shows CLI selector (git, docker, npm, etc.)
-- Uses default settings
-
-### Building SEA Binaries (Optional for Contributors)
-
-**Build for current platform only (fast):**
-```bash
-npm run build:sea:current
-./dist/binaries/climb-linux-x64  # Test the binary
-```
-
-**Build for all platforms (requires GitHub Actions):**
-```bash
-# Tag and push to trigger GitHub Actions
-git tag v2.0.1
-git push --tags
-
-# GitHub Actions automatically:
-# 1. Builds binaries for Linux, macOS (x64 + arm64), Windows
-# 2. Creates GitHub Release
-# 3. Uploads all binaries
-```
-
-**What gets built:**
-- `climb-linux-x64` (~45MB)
-- `climb-darwin-x64` (~45MB)
-- `climb-darwin-arm64` (~45MB)
-- `climb-win32-x64.exe` (~45MB)
 
 ---
 
-## 📖 Quick Start Guide
-
-### 1. Launch climb
+## Quick start (60 seconds)
 
 ```bash
 climb
+# 1) Select CLI (git/docker/npm/kubectl/…)
+# 2) Explore → choose a command
+# 3) Fill arguments in guided prompts
+# 4) Preview full command
+# 5) Execute, then inspect History and re-run
 ```
-
-### 2. Select or Switch CLI
-
-First run shows CLI selector:
-- git
-- docker
-- npm
-- kubectl
-- mcpjungle (MCP server support)
-- ...and more
-
-Or use **"Switch CLI"** from settings.
-
-### 3. Explore Commands
-
-From the main menu:
-1. Select **"Explore"** - Browse available commands
-2. View commands ranked by confidence
-3. Navigate subcommands interactively
-4. Fill in arguments with guided prompts
-5. Preview and execute
-
-### 4. View History
-
-From the main menu:
-1. Select **"History"** - View past commands
-2. See exit codes, duration, timestamps
-3. Re-run commands with one keystroke
-4. Edit and modify before re-running
-5. Clear history or export to JSON
-
-### 5. Customize
-
-- **Switch CLI** - Change target CLI tool
-- **Settings** - Configure cache, history size (mcpjungle: registry URL)
-- **ESC Navigation** - Always go back, never exit accidentally
 
 ---
 
-## 📋 What You Get
+## How it works
 
-### Main Menu
+* **Introspection:** climb runs each tool’s `--help` (or equivalent) and parses subcommands/flags into a graph.
+* **Ranking:** commands surface with a confidence score based on help structure, frequency hints, and heuristics.
+* **Execution:** preview renders the exact command; nothing runs until you confirm.
+* **History:** metadata (exit code, duration, timestamp) is stored locally for re-run and export.
+
+Implementation uses a SEA-friendly stack (`child_process`, `@inquirer/prompts`, `esbuild`, `postject`).
+
+---
+
+## Agents: MCP‑style tool discovery for any CLI
+
+climb gives LLM agents a discovery surface similar to MCP servers’ tool listings, but for **arbitrary CLIs**. The TUI is for humans; agents can use the **headless JSON interfaces** below to inspect, plan, and execute deterministically.
+
+### Headless interfaces
+
+* **Export command graph**
+
+  ```bash
+  # Build a machine‑readable arg/subcommand tree from CLI help
+  climb export <cli> --format json > graph.json
+  ```
+
+  Output includes commands, summaries, options/flags with types, required/optional, and examples. Stable IDs let agents cache and reference nodes.
+
+* **Plan & preview**
+
+  ```bash
+  # Produce a structured preview for a candidate invocation (no side effects)
+  climb preview <cli> --json -- "<args...>"
+  # → { command, argv, cwd, envPolicy, preview, safetyNotes }
+  ```
+
+* **Execute with structure**
+
+  ```bash
+  # Run with a structured result envelope suitable for tool use
+  climb run <cli> --json -- "<args...>"
+  # → { command, status, exitCode, durationMs, stdout, stderr }
+  ```
+
+> These headless commands are designed so an MCP client (or any agent runtime) can emulate **tool discovery** and **tool use** without writing bespoke adapters for each CLI.
+
+### Design considerations (agent‑friendly)
+
+* **Token efficiency:** export once, cache graph by CLI version; send short IDs in subsequent calls.
+* **Determinism:** explicit argv in previews; no ambient state mutation unless `--allow-env`/`--cwd` is set.
+* **Safety:** dry‑run by default in `preview`; `run` requires an explicit `--confirm` in non‑TTY contexts.
+* **Observability:** machine‑readable timings, exit codes, and truncated output windows with byte counts.
+* **Policy hooks:** optional allowlist/denylist for commands and flags; redaction for secrets in history.
+
+### MCP adjacency
+
+If you already use MCP servers, you can keep them for high‑value, hand‑curated tools and use **climb export** to fill the gaps for long‑tail CLIs. The effect mirrors MCP **tool discovery** for everything that exposes `--help`.
+
+---
+
+## Configuration
+
+**Location:** `~/.climb/config.json`
+**Auto-migration:** `~/.junglectl` → `~/.climb` on first run.
+
+Key settings:
+
+* `targetCli`: active CLI (e.g., "git")
+* `cliPath`: override executable path
+* `defaultArgs`: array of args appended to every run
+* `history`: `{ enabled: true, max: 100 }`
+* `registryUrl`: for mcpjungle
+* `cacheTtl`: per-source TTLs
+
+Edit via Settings in the TUI or by hand.
+
+---
+
+## Keyboard shortcuts
+
+| Action                | Keys                               |
+| --------------------- | ---------------------------------- |
+| Navigate              | `↑ ↓` or `j / k`                   |
+| Select/confirm        | `Enter`                            |
+| Back                  | `ESC`                              |
+| Exit (from main menu) | `Ctrl+C`                           |
+| Toggle checkbox       | `Space`                            |
+| Toggle all / invert   | `a` / `i`                          |
+| Filter list           | start typing                       |
+| Text input clear      | `Ctrl+U` (line), `Ctrl+K` (to end) |
+
+---
+
+## Examples
+
+**Explore git**
+
 ```
-  🧗 climb v2.0.0
-
-  Exploring: git
-  CLI: git | Version: 2.43.0 ✅
-
-? What would you like to do?
-  ❯ 🔍 Explore git Commands
-    📜 View Command History
-    🔄 Switch CLI
-    ⚙️  Settings
-    ❌ Exit
+? Select a command:
+  commit (0.95) – Record changes
+❯ push   (0.90) – Update remote refs
+  pull   (0.90) – Fetch and merge
+  …
 ```
 
-### Example: Command Exploration (git)
+**Argument form and preview**
 
 ```
-? Select a command to explore:
-  commit (0.95) - Record changes to the repository
-  ❯ push (0.90) - Update remote refs along with objects
-  pull (0.90) - Fetch and merge from remote
-  branch (0.85) - List, create, or delete branches
-  checkout (0.85) - Switch branches or restore files
-  merge (0.80) - Join development histories
-  rebase (0.80) - Reapply commits on another base
-  ...
-
-→ Selected: git push
-
 ? Enter arguments for: git push
   remote (optional): origin
   branch (optional): main
@@ -241,218 +250,137 @@ From the main menu:
   --tags? Yes
 
 Preview: git push origin main --tags
-
-✓ Execute? Yes
-
-🚀 Executing: git push origin main --tags
-[Output shown here...]
-✅ Command completed (exit code: 0, 1.2s)
+Execute? ✓
 ```
 
 ---
 
-## ⚙️ Configuration
+## Troubleshooting
 
-**Location**: `~/.climb/config.json`
+### Binary blocked (macOS)
 
-**Customizable Settings**:
-- **Target CLI** - Currently selected CLI tool (git, docker, npm, kubectl, etc.)
-- **CLI Path** - Custom path to CLI executable
-- **Default Args** - Arguments to pass to every command
-- **History** - Enable/disable, max size (default: 100 commands)
-- **Registry URL** - (mcpjungle only) MCP server endpoint
-- **Cache TTLs** - (mcpjungle only) Cache durations
-
-Edit from Settings menu or manually edit config file.
-
-**Auto-Migration**: v1.0 configs (~/.junglectl) automatically migrate to v2.0 (~/.climb)
-
----
-
-## ⌨️ Keyboard Shortcuts
-
-climb supports intuitive keyboard navigation:
-
-**Navigation:**
-- `↑↓` or `j/k` - Navigate through options
-- `Enter` - Select/confirm current option  
-- **`ESC`** - Go back to previous menu (never exits app)
-- `Ctrl+C` - Exit application from main menu
-
-**Multi-Select (Checkboxes):**
-- `Space` - Toggle current item on/off
-- `a` - Toggle all items
-- `i` - Invert selection
-- `Enter` - Confirm selection
-- **`ESC`** - Cancel and go back
-
-**Search/Filter:**
-- Type to start filtering
-- `↑↓` - Navigate filtered results
-- `Enter` - Select item
-- **`ESC`** - Cancel search
-
-**Text Input:**
-- `Ctrl+U` - Clear line
-- `Ctrl+K` - Clear to end
-- **`ESC`** - Cancel input
-
-💡 **Tip:** ESC always goes back one level, Ctrl+C exits the app. Selection counts show "5 selected of 23" in multi-select mode!
-
----
-
-## 📚 Documentation
-
-- **[CHANGELOG.md](./CHANGELOG.md)** - Version history
-
----
-
-## 🛠️ For Developers
-
-### Development Setup
+Gatekeeper may quarantine downloaded binaries. Allow from System Settings → Privacy & Security, or remove the attribute:
 
 ```bash
-git clone https://github.com/ain3sh/climb.git
-cd climb
-npm install
-npm run dev  # Run in development mode
+xattr -d com.apple.quarantine /path/to/climb-darwin-arm64
 ```
 
-### Commands
+### SmartScreen warning (Windows native)
+
+Unsigned binaries can trigger “Windows protected your PC.” Choose **More info → Run anyway**. Reputation improves with code signing.
+
+### WSL notes (Windows)
+
+* Use your WSL shell to install and run `climb` with the Linux binary or installer.
+* PATH updates go into your WSL profile (e.g., `~/.bashrc`), not Windows PowerShell.
+* To launch from Windows Terminal, open a WSL profile tab and run `climb` there.
+
+### CLI tool not found
+
+Install the target CLI and ensure it’s on PATH (inside your environment: Linux/macOS/WSL):
 
 ```bash
-npm run dev                # Development mode with tsx
-npm run build              # Build TypeScript → JavaScript
-npm run build:sea:current  # Build SEA binary (current platform)
-npm run build:sea          # Build SEA binaries (all platforms, CI only)
-npm start                  # Run built version
-npm run watch              # Watch mode (rebuild on changes)
-npm run type-check         # Type checking only
-npm run clean              # Remove build artifacts
+sudo apt install git docker.io kubectl      # Ubuntu/Debian/WSL Ubuntu
+brew install git docker kubectl             # macOS
 ```
 
-### Architecture
+### PATH issues (Linux/macOS/WSL)
 
-- **`src/core/`** - Core systems (executor, help parser, cache, config, introspection)
-- **`src/commands/`** - Feature implementations (explore, history, switch-cli, invoke, etc.)
-- **`src/ui/`** - UI components (prompts, formatters, tables, spinners)
-- **`src/types/`** - TypeScript type definitions (config, CLI entities)
-- **`scripts/`** - Build scripts (SEA, install)
-
-### Tech Stack
-
-- **TypeScript** - Type-safe development (strict mode, zero errors)
-- **child_process** - Command execution (SEA-compatible, no native modules)
-- **@inquirer/prompts** - Interactive CLI prompts
-- **chalk** - Terminal colors
-- **cli-table3** - Beautiful tables
-- **ora** - Loading spinners
-- **esbuild** - Fast JavaScript bundler (SEA builds)
-- **postject** - SEA blob injection tool
-
----
-
-## 🐛 Troubleshooting
-
-### Binary Not in PATH (SEA install)
 ```bash
-# Add ~/.climb/bin to PATH
-echo 'export PATH="$HOME/.climb/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc  # or ~/.zshrc
+echo 'export PATH="$HOME/.climb/bin:$PATH"' >> ~/.bashrc  # or ~/.zshrc
 ```
 
-### CLI Tool Not Found
+### Reset config/history
+
 ```bash
-# climb checks if target CLI exists
-# Install missing CLI tools:
-
-# git
-sudo apt install git         # Ubuntu/Debian
-brew install git             # macOS
-
-# docker
-sudo apt install docker.io   # Ubuntu/Debian
-brew install docker          # macOS
-
-# kubectl
-sudo apt install kubectl     # Ubuntu/Debian
-brew install kubectl         # macOS
-```
-
-### Config Errors
-```bash
-# View current config
-cat ~/.climb/config.json
-
-# Reset to defaults (delete and restart)
 rm -rf ~/.climb
-climb  # Creates fresh config
-```
-
-### History Issues
-```bash
-# Clear history
-climb → History → Clear History
-
-# Or manually delete
+# or just history
 rm ~/.climb/history.json
 ```
 
 ---
 
-## 🤝 Contributing
+## Building binaries (contributors)
 
-Contributions welcome! climb is a universal CLI explorer built with extensibility in mind.
+Node SEA packs your app into a single executable using a SEA blob injected into a Node binary with `postject`. CI builds cross-platform artifacts.
 
-### Ideas for Contributions
-- Support for more CLI tools (add to POPULAR_CLIS in switch-cli.ts)
-- Better help parsing (improve confidence scoring)
-- Command templates/favorites
-- Plugin system for custom CLIs
-- Test coverage
-- Documentation improvements
-
- 
-
----
-
-## 📊 Project Stats
-
-- **Universal architecture** - Works with ANY CLI tool
-- **Zero TypeScript errors** in strict mode
-- **SEA binaries** - No Node.js required for end users
-- **~3,000 lines of code** (core + universal features)
-- **Cross-platform** - Linux, macOS (x64 + arm64), Windows support
-
----
-
-## 📝 License
-
-MIT License - See [LICENSE](./LICENSE) file for details
-
----
-
-## 🙏 Acknowledgments
-
-Built with ❤️ for CLI enthusiasts everywhere
-
-Special thanks to:
-- The Node.js team for SEA support
-- @inquirer/prompts for beautiful CLI interactions
-- chalk, ora, cli-table3 for terminal aesthetics
-- esbuild for lightning-fast bundling
-
----
-
-**Ready to climb?** 🧗
-
-**Climb — ascend the arg tree**
+**Local (current platform)**
 
 ```bash
-# End users (no Node.js required)
-curl -fsSL https://raw.githubusercontent.com/ain3sh/climb/main/scripts/install.sh | bash
-
-# Developers
-npm install -g climb-cli
-climb
+npm run build
+npm run build:sea:current
+./dist/binaries/climb-linux-x64   # test
 ```
+
+**All platforms (via GitHub Actions)**
+
+```bash
+git tag v2.0.1
+git push --tags
+# CI builds Linux/macOS (x64+arm64)/Windows and drafts a Release
+```
+
+Resulting sizes are typically ~45–55 MB depending on Node base and bundling.
+
+**Notes**
+
+* SEA reads a blob resource named `NODE_SEA_BLOB` and requires a sentinel fuse at injection time.
+* There’s no general VFS in Node SEA; assets must be bundled and accessed carefully.
+
+---
+
+## Architecture
+
+* `src/core/` executor, help parser, cache, config, introspection
+* `src/commands/` explore, history, switch-cli, invoke
+* `src/ui/` prompts, tables, spinners
+* `src/types/` TypeScript definitions
+* `scripts/` SEA and install scripts
+
+Stack: TypeScript (strict), `child_process`, `@inquirer/prompts`, `chalk`, `cli-table3`, `ora`, `esbuild`, `postject`.
+
+---
+
+## Security & privacy
+
+* **Execution:** climb runs exactly the command shown in preview. You approve before execution.
+* **Local only:** History and config live in `~/.climb/`. No network calls are made unless your chosen CLI does so.
+* **Least surprise:** You can disable history or reduce retention in Settings.
+
+---
+
+## Contributing
+
+* Good first issues: new CLI adapters, help-parser improvements, command templates/favorites, test coverage, docs.
+* Dev scripts:
+
+```bash
+npm run dev
+npm run type-check
+npm run build
+npm run build:sea
+npm run clean
+```
+
+---
+
+## Project stats
+
+* Cross-platform binaries (no Node required)
+* TypeScript strict mode
+* ~3k LOC core
+* Works with common CLIs out of the box
+
+---
+
+## License
+
+MIT © ain3sh
+
+---
+
+## Acknowledgments
+
+* Node.js SEA and postject maintainers for making single-file binaries possible.
+* Inquirer ecosystem for solid prompts.
+* `chalk`, `ora`, `cli-table3`, `esbuild` for a smooth DX.
