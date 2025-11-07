@@ -108,6 +108,11 @@ function isLikelyNoise(name: string, path: string): boolean {
     return true;
   }
 
+  // macOS application bundles ship GUI entry points that should not be probed
+  if (path.includes('.app/Contents/MacOS/')) {
+    return true;
+  }
+
   return false;
 }
 
@@ -269,7 +274,7 @@ async function testAndScoreCLI(
  * Tests all flags in PARALLEL for maximum performance
  */
 async function testHelpSupport(cliPath: string, timeout: number): Promise<string | null> {
-  const helpFlags = ['--help', '-h', 'help'];
+  const helpFlags = ['--help', '-h', '-?'];
 
   // Test all flags in parallel and return the first successful result
   // This is 3x faster than sequential testing in worst case
@@ -308,6 +313,8 @@ function executeWithTimeout(command: string, args: string[], timeout: number): P
     // Note: spawn's timeout option is unreliable, so we implement our own
     const child = spawn(command, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
+      env: buildSandboxEnv(),
+      windowsHide: true,
     });
 
     let stdout = '';
@@ -344,6 +351,10 @@ function executeWithTimeout(command: string, args: string[], timeout: number): P
       }
     });
 
+    child.stderr?.on('data', () => {
+      // Drain stderr to avoid backpressure stalling the process
+    });
+
     child.on('close', () => {
       clearTimeout(sigtermTimer);
       if (!timedOut && stdout.trim()) {
@@ -358,6 +369,50 @@ function executeWithTimeout(command: string, args: string[], timeout: number): P
       resolve(null);
     });
   });
+}
+
+/**
+ * Create an execution environment that avoids interactive pagers and GUI launches
+ */
+function buildSandboxEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = {
+    ...process.env,
+    // Force pagers to dump output instead of waiting for TTY interaction
+    PAGER: 'cat',
+    MANPAGER: 'cat',
+    GIT_PAGER: 'cat',
+    AWS_PAGER: '',
+    SYSTEMD_PAGER: 'cat',
+    LESS: 'FRX',
+    // Prevent GUI launches (common on Linux/macOS desktop environments)
+    DISPLAY: '',
+    WAYLAND_DISPLAY: '',
+    DBUS_SESSION_BUS_ADDRESS: '',
+    XDG_RUNTIME_DIR: '',
+    XDG_CURRENT_DESKTOP: '',
+    NO_AT_BRIDGE: '1',
+    QT_QPA_PLATFORM: 'offscreen',
+    SDL_AUDIODRIVER: 'dummy',
+    // Keep output deterministic and small
+    TERM: 'dumb',
+    COLUMNS: '80',
+    LINES: '24',
+    NO_COLOR: '1',
+    CLIMB_DISCOVERY: '1',
+  };
+
+  // Some CLIs respect VISUAL/EDITOR/BROWSER for help content - neutralise them
+  env.VISUAL = 'true';
+  env.EDITOR = 'true';
+  env.BROWSER = process.platform === 'win32'
+    ? 'C\\Windows\\System32\\where.exe'
+    : 'true';
+  env.GIT_EDITOR = 'true';
+  env.SUDO_ASKPASS = '/bin/false';
+  env.ANSIBLE_NOCOLOR = '1';
+  env.CI = '1';
+
+  return env;
 }
 
 /**
