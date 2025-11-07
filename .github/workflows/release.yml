@@ -110,9 +110,9 @@ jobs:
             
             ### Installation
             
-            **One-line install (Linux/macOS):**
+            **One-line install (Linux/macOS/WSL):**
             ```bash
-            curl -fsSL https://raw.githubusercontent.com/ain3sh/climb/main/scripts/install.sh | bash
+            curl -fsSL https://ain3sh.com/climb/install.sh | bash
             ```
             
             **Manual download:**
