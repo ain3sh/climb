@@ -42,12 +42,28 @@ async function mainMenu() {
     if (await maybeRunDiscover())
         return;
     let config;
+    let wasFirstRun = false;
     try {
+        wasFirstRun = await isFirstRun();
         config = await loadConfig();
-        if (await isFirstRun()) {
+        if (wasFirstRun) {
             await saveConfig(config);
             await showWelcomeIfFirstRun();
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            if (config.targetCLI === 'mcpjungle' && config.registryUrl) {
+                console.log(chalk.yellow('  📦 Detected migrated configuration from junglectl\n'));
+                console.log(chalk.gray('  climb now works with ANY CLI tool (git, docker, npm, kubectl, etc.)'));
+                console.log(chalk.gray('  You can keep mcpjungle or explore other tools.\n'));
+                const exploreCLIs = await Prompts.confirm('Explore other CLI tools now?', true);
+                if (exploreCLIs) {
+                    const { switchCLIInteractive } = await import('./commands/switch-cli.js');
+                    config = await switchCLIInteractive(config);
+                    await saveConfig(config);
+                }
+                else {
+                    console.log(chalk.gray('\n  Keeping mcpjungle. You can switch anytime from Settings → Switch CLI\n'));
+                }
+            }
+            await new Promise(resolve => setTimeout(resolve, 1500));
         }
     }
     catch (error) {
