@@ -126,12 +126,16 @@ async function selectNewCLI(): Promise<string | null> {
   spinner.start('Scanning PATH directories...');
 
   try {
-    // Discover CLIs from system
+    // Discover CLIs from system with optimized performance settings
     let discovered = await discoverCLIs({
-      maxConcurrent: 15,
-      timeout: 1500,
-      minScore: -5,  // Allow negative scores for comprehensive list
-      limit: 200,    // Get top 200 candidates
+      maxConcurrent: 30,  // Increased from 15 - with SIGKILL fallback, we can safely run more concurrent tests
+      timeout: 1000,      // Reduced from 1500ms - with proper SIGKILL, this is safe and faster
+      minScore: -5,       // Allow negative scores for comprehensive list
+      limit: 200,         // Get top 200 candidates
+      onProgress: (current, total) => {
+        // Update spinner with progress
+        spinner.update(`Testing CLI tools (${current}/${total})...`);
+      },
     });
 
     spinner.stop();

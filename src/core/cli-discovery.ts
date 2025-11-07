@@ -31,6 +31,7 @@ export interface DiscoveryOptions {
   limit?: number;
   useCache?: boolean;
   cacheTTL?: number; // milliseconds
+  onProgress?: (current: number, total: number) => void; // Progress callback
 }
 
 const CACHE_FILE = path.join(os.homedir(), '.climb', 'cli-discovery-cache.json');
@@ -67,19 +68,69 @@ export async function discoverCLIs(options: DiscoveryOptions = {}): Promise<Disc
 }
 
 /**
+ * Check if a candidate is likely noise (algorithmic, no hardcoded lists)
+ * Returns true if candidate should be filtered out BEFORE expensive help testing
+ */
+function isLikelyNoise(name: string, path: string): boolean {
+  // Single-character names are usually basic system utilities
+  if (name.length === 1) return true;
+
+  // Two-character names are also usually system utilities
+  if (name.length === 2) return true;
+
+  // Files with common non-CLI extensions
+  if (/\.(so|a|dylib|dll|o|conf|txt|md|json|xml|yml|yaml)$/i.test(name)) {
+    return true;
+  }
+
+  // Scripts without execute bit or with shebang-only functionality
+  // (These were already filtered by executable check, but double-check)
+  if (name.endsWith('~') || name.endsWith('.bak') || name.endsWith('.swp')) {
+    return true;
+  }
+
+  // Version-suffixed duplicates (python3.11, gcc-11, node18, etc.)
+  // Keep the base version (python3, gcc) but filter numbered variants
+  if (/\d{2,}$/.test(name)) return true; // Ends with 2+ digits
+  if (/[.-]\d+\.\d+/.test(name)) return true; // Contains version like -1.2 or .3.4
+
+  // All-caps short names are often system utilities or aliases
+  if (name.length <= 4 && name === name.toUpperCase()) {
+    return true;
+  }
+
+  // Common system utility prefixes (algorithmic patterns, not exhaustive list)
+  if (name.startsWith('_')) return true; // Internal/private utilities
+  if (name.startsWith('.')) return true; // Hidden utilities (shouldn't get here but check)
+
+  // System library paths are unlikely to contain useful CLIs
+  if (path.includes('/System/Library/') || path.includes('/usr/libexec/')) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
  * Perform actual discovery (separate for caching logic)
  */
 async function performDiscovery(options: DiscoveryOptions): Promise<DiscoveredCLI[]> {
   const {
-    maxConcurrent = 10,
+    maxConcurrent = 25, // Increased from 10 - modern systems can handle more concurrent processes
     timeout = 2000,
+    onProgress,
   } = options;
 
   // Phase 1: Scan PATH directories
-  const candidates = await scanPathDirectories();
+  const allCandidates = await scanPathDirectories();
+
+  // Phase 1.5: Early filtering - remove obvious noise BEFORE expensive help testing
+  // This dramatically improves performance by reducing test volume
+  const candidates = allCandidates.filter(candidate => !isLikelyNoise(candidate.name, candidate.path));
 
   // Phase 2: Test and score (with concurrency limit)
   const discovered: DiscoveredCLI[] = [];
+  let processedCount = 0;
 
   for (let i = 0; i < candidates.length; i += maxConcurrent) {
     const batch = candidates.slice(i, i + maxConcurrent);
@@ -88,6 +139,12 @@ async function performDiscovery(options: DiscoveryOptions): Promise<DiscoveredCL
     );
 
     discovered.push(...results.filter((r): r is DiscoveredCLI => r !== null));
+
+    // Report progress after each batch
+    processedCount += batch.length;
+    if (onProgress) {
+      onProgress(processedCount, candidates.length);
+    }
   }
 
   // Phase 3: Filter and sort
@@ -209,19 +266,33 @@ async function testAndScoreCLI(
 
 /**
  * Test if CLI supports help flags
+ * Tests all flags in PARALLEL for maximum performance
  */
 async function testHelpSupport(cliPath: string, timeout: number): Promise<string | null> {
   const helpFlags = ['--help', '-h', 'help'];
 
-  for (const flag of helpFlags) {
+  // Test all flags in parallel and return the first successful result
+  // This is 3x faster than sequential testing in worst case
+  const promises = helpFlags.map(async (flag) => {
     try {
       const output = await executeWithTimeout(cliPath, [flag], timeout);
       if (output && output.length > 10) {
         return output;
       }
+      return null;
     } catch {
-      // This flag didn't work, try next
-      continue;
+      return null;
+    }
+  });
+
+  // Use Promise.race pattern: return first successful result
+  // If all fail, Promise.all will resolve with all nulls
+  const results = await Promise.all(promises);
+
+  // Return first non-null result
+  for (const result of results) {
+    if (result !== null) {
+      return result;
     }
   }
 
@@ -230,29 +301,51 @@ async function testHelpSupport(cliPath: string, timeout: number): Promise<string
 
 /**
  * Execute command with timeout
+ * Implements proper timeout with SIGKILL fallback for stubborn processes
  */
 function executeWithTimeout(command: string, args: string[], timeout: number): Promise<string | null> {
   return new Promise((resolve) => {
+    // Note: spawn's timeout option is unreliable, so we implement our own
     const child = spawn(command, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
-      timeout,
     });
 
     let stdout = '';
     let timedOut = false;
+    let killed = false;
 
-    const timer = setTimeout(() => {
-      timedOut = true;
-      child.kill();
+    // SIGTERM timeout - graceful shutdown attempt
+    const SIGTERM_GRACE_PERIOD = 100; // ms to wait before SIGKILL
+
+    const sigtermTimer = setTimeout(() => {
+      if (!killed) {
+        timedOut = true;
+        killed = true;
+        child.kill('SIGTERM'); // Try graceful shutdown first
+
+        // SIGKILL fallback - force kill stubborn processes
+        const sigkillTimer = setTimeout(() => {
+          if (child.exitCode === null) {
+            child.kill('SIGKILL'); // Force kill if process didn't respond to SIGTERM
+          }
+        }, SIGTERM_GRACE_PERIOD);
+
+        // Clean up SIGKILL timer if process exits
+        child.once('exit', () => clearTimeout(sigkillTimer));
+      }
       resolve(null);
     }, timeout);
 
     child.stdout?.on('data', (data) => {
-      stdout += data.toString();
+      // Limit stdout collection to prevent memory issues
+      const MAX_STDOUT_SIZE = 100000; // 100KB should be enough for help text
+      if (stdout.length < MAX_STDOUT_SIZE) {
+        stdout += data.toString();
+      }
     });
 
     child.on('close', () => {
-      clearTimeout(timer);
+      clearTimeout(sigtermTimer);
       if (!timedOut && stdout.trim()) {
         resolve(stdout);
       } else {
@@ -261,7 +354,7 @@ function executeWithTimeout(command: string, args: string[], timeout: number): P
     });
 
     child.on('error', () => {
-      clearTimeout(timer);
+      clearTimeout(sigtermTimer);
       resolve(null);
     });
   });

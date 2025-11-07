@@ -19,14 +19,47 @@ export async function discoverCLIs(options = {}) {
     }
     return clis;
 }
+function isLikelyNoise(name, path) {
+    if (name.length === 1)
+        return true;
+    if (name.length === 2)
+        return true;
+    if (/\.(so|a|dylib|dll|o|conf|txt|md|json|xml|yml|yaml)$/i.test(name)) {
+        return true;
+    }
+    if (name.endsWith('~') || name.endsWith('.bak') || name.endsWith('.swp')) {
+        return true;
+    }
+    if (/\d{2,}$/.test(name))
+        return true;
+    if (/[.-]\d+\.\d+/.test(name))
+        return true;
+    if (name.length <= 4 && name === name.toUpperCase()) {
+        return true;
+    }
+    if (name.startsWith('_'))
+        return true;
+    if (name.startsWith('.'))
+        return true;
+    if (path.includes('/System/Library/') || path.includes('/usr/libexec/')) {
+        return true;
+    }
+    return false;
+}
 async function performDiscovery(options) {
-    const { maxConcurrent = 10, timeout = 2000, } = options;
-    const candidates = await scanPathDirectories();
+    const { maxConcurrent = 25, timeout = 2000, onProgress, } = options;
+    const allCandidates = await scanPathDirectories();
+    const candidates = allCandidates.filter(candidate => !isLikelyNoise(candidate.name, candidate.path));
     const discovered = [];
+    let processedCount = 0;
     for (let i = 0; i < candidates.length; i += maxConcurrent) {
         const batch = candidates.slice(i, i + maxConcurrent);
         const results = await Promise.all(batch.map(c => testAndScoreCLI(c, timeout)));
         discovered.push(...results.filter((r) => r !== null));
+        processedCount += batch.length;
+        if (onProgress) {
+            onProgress(processedCount, candidates.length);
+        }
     }
     return filterAndLimitCLIs(discovered, options);
 }
@@ -111,15 +144,22 @@ async function testAndScoreCLI(candidate, timeout) {
 }
 async function testHelpSupport(cliPath, timeout) {
     const helpFlags = ['--help', '-h', 'help'];
-    for (const flag of helpFlags) {
+    const promises = helpFlags.map(async (flag) => {
         try {
             const output = await executeWithTimeout(cliPath, [flag], timeout);
             if (output && output.length > 10) {
                 return output;
             }
+            return null;
         }
         catch {
-            continue;
+            return null;
+        }
+    });
+    const results = await Promise.all(promises);
+    for (const result of results) {
+        if (result !== null) {
+            return result;
         }
     }
     return null;
@@ -128,20 +168,33 @@ function executeWithTimeout(command, args, timeout) {
     return new Promise((resolve) => {
         const child = spawn(command, args, {
             stdio: ['ignore', 'pipe', 'pipe'],
-            timeout,
         });
         let stdout = '';
         let timedOut = false;
-        const timer = setTimeout(() => {
-            timedOut = true;
-            child.kill();
+        let killed = false;
+        const SIGTERM_GRACE_PERIOD = 100;
+        const sigtermTimer = setTimeout(() => {
+            if (!killed) {
+                timedOut = true;
+                killed = true;
+                child.kill('SIGTERM');
+                const sigkillTimer = setTimeout(() => {
+                    if (child.exitCode === null) {
+                        child.kill('SIGKILL');
+                    }
+                }, SIGTERM_GRACE_PERIOD);
+                child.once('exit', () => clearTimeout(sigkillTimer));
+            }
             resolve(null);
         }, timeout);
         child.stdout?.on('data', (data) => {
-            stdout += data.toString();
+            const MAX_STDOUT_SIZE = 100000;
+            if (stdout.length < MAX_STDOUT_SIZE) {
+                stdout += data.toString();
+            }
         });
         child.on('close', () => {
-            clearTimeout(timer);
+            clearTimeout(sigtermTimer);
             if (!timedOut && stdout.trim()) {
                 resolve(stdout);
             }
@@ -150,7 +203,7 @@ function executeWithTimeout(command, args, timeout) {
             }
         });
         child.on('error', () => {
-            clearTimeout(timer);
+            clearTimeout(sigtermTimer);
             resolve(null);
         });
     });

@@ -13,6 +13,7 @@ export interface DiscoveryOptions {
     limit?: number;
     useCache?: boolean;
     cacheTTL?: number;
+    onProgress?: (current: number, total: number) => void;
 }
 export declare function discoverCLIs(options?: DiscoveryOptions): Promise<DiscoveredCLI[]>;
 //# sourceMappingURL=cli-discovery.d.ts.map

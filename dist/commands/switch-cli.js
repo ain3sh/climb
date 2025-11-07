@@ -80,10 +80,13 @@ async function selectNewCLI() {
     spinner.start('Scanning PATH directories...');
     try {
         let discovered = await discoverCLIs({
-            maxConcurrent: 15,
-            timeout: 1500,
+            maxConcurrent: 30,
+            timeout: 1000,
             minScore: -5,
             limit: 200,
+            onProgress: (current, total) => {
+                spinner.update(`Testing CLI tools (${current}/${total})...`);
+            },
         });
         spinner.stop();
         if (discovered.length === 0) {

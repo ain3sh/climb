@@ -61,7 +61,7 @@ async function mainMenu(): Promise<void> {
   let config: AppConfig;
   try {
     config = await loadConfig();
-    
+
     // Save config on first run
     if (await isFirstRun()) {
       await saveConfig(config);
@@ -264,25 +264,6 @@ async function mainMenu(): Promise<void> {
 
         case 'enable':
         case 'disable':
-          if (config.targetCLI === 'mcpjungle') {
-            await enableDisableMenuInteractive(config.registryUrl);
-          }
-          break;
-
-        // Legacy cases (for backward compatibility)
-        case 'browse':
-          if (config.targetCLI === 'mcpjungle') {
-            await browseInteractive(config.registryUrl);
-          }
-          break;
-
-        case 'groups':
-          if (config.targetCLI === 'mcpjungle') {
-            await groupsMenuInteractive(config.registryUrl);
-          }
-          break;
-
-        case 'enable-disable':
           if (config.targetCLI === 'mcpjungle') {
             await enableDisableMenuInteractive(config.registryUrl);
           }

@@ -207,21 +207,6 @@ async function mainMenu() {
                         await enableDisableMenuInteractive(config.registryUrl);
                     }
                     break;
-                case 'browse':
-                    if (config.targetCLI === 'mcpjungle') {
-                        await browseInteractive(config.registryUrl);
-                    }
-                    break;
-                case 'groups':
-                    if (config.targetCLI === 'mcpjungle') {
-                        await groupsMenuInteractive(config.registryUrl);
-                    }
-                    break;
-                case 'enable-disable':
-                    if (config.targetCLI === 'mcpjungle') {
-                        await enableDisableMenuInteractive(config.registryUrl);
-                    }
-                    break;
                 default:
                     console.log(Formatters.warning(`Command "${action}" not yet implemented`));
                     await Prompts.confirm('Press Enter to continue', true);
