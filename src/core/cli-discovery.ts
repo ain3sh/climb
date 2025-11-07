@@ -2,6 +2,12 @@
  * CLI Discovery System
  * Dynamically discovers command-line tools available on the system
  * NO HARDCODED LISTS - pure algorithmic discovery from PATH
+ *
+ * CRITICAL SAFETY NOTES:
+ * - Help flags are tested SEQUENTIALLY (not in parallel) to prevent process explosion
+ * - maxConcurrent is kept low (default 10) to prevent spawning too many processes
+ * - GUI applications are filtered out to prevent opening app windows
+ * - These safeguards prevent runaway behavior that could look like malware
  */
 
 import fs from 'fs/promises';
@@ -108,6 +114,22 @@ function isLikelyNoise(name: string, path: string): boolean {
     return true;
   }
 
+  // CRITICAL: Filter out GUI applications to prevent runaway behavior
+  // macOS app bundles - these will open GUI windows when executed
+  if (path.includes('.app/Contents/MacOS/') || path.includes('.app/Contents/Resources/')) {
+    return true;
+  }
+
+  // Windows GUI executables are typically in specific directories
+  if (path.includes('\\Program Files\\') || path.includes('\\Program Files (x86)\\')) {
+    return true;
+  }
+
+  // Common GUI app patterns across platforms
+  if (name.toLowerCase().includes('helper') || name.toLowerCase().includes('agent')) {
+    return true;
+  }
+
   return false;
 }
 
@@ -116,7 +138,7 @@ function isLikelyNoise(name: string, path: string): boolean {
  */
 async function performDiscovery(options: DiscoveryOptions): Promise<DiscoveredCLI[]> {
   const {
-    maxConcurrent = 25, // Increased from 10 - modern systems can handle more concurrent processes
+    maxConcurrent = 10, // Conservative default to prevent runaway behavior (reduced from 25)
     timeout = 2000,
     onProgress,
   } = options;
@@ -266,33 +288,24 @@ async function testAndScoreCLI(
 
 /**
  * Test if CLI supports help flags
- * Tests all flags in PARALLEL for maximum performance
+ * IMPORTANT: Tests flags SEQUENTIALLY to prevent spawning too many processes
+ * This prevents the runaway behavior where GUI apps open simultaneously
  */
 async function testHelpSupport(cliPath: string, timeout: number): Promise<string | null> {
   const helpFlags = ['--help', '-h', 'help'];
 
-  // Test all flags in parallel and return the first successful result
-  // This is 3x faster than sequential testing in worst case
-  const promises = helpFlags.map(async (flag) => {
+  // Test flags one at a time, stop on first success
+  // This is CRITICAL to prevent spawning 3x processes for every CLI
+  // Previously this used Promise.all which caused 90+ concurrent processes (30 CLIs × 3 flags)
+  for (const flag of helpFlags) {
     try {
       const output = await executeWithTimeout(cliPath, [flag], timeout);
       if (output && output.length > 10) {
-        return output;
+        return output; // Stop on first success
       }
-      return null;
     } catch {
-      return null;
-    }
-  });
-
-  // Use Promise.race pattern: return first successful result
-  // If all fail, Promise.all will resolve with all nulls
-  const results = await Promise.all(promises);
-
-  // Return first non-null result
-  for (const result of results) {
-    if (result !== null) {
-      return result;
+      // Try next flag
+      continue;
     }
   }
 

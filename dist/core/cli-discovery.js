@@ -44,10 +44,19 @@ function isLikelyNoise(name, path) {
     if (path.includes('/System/Library/') || path.includes('/usr/libexec/')) {
         return true;
     }
+    if (path.includes('.app/Contents/MacOS/') || path.includes('.app/Contents/Resources/')) {
+        return true;
+    }
+    if (path.includes('\\Program Files\\') || path.includes('\\Program Files (x86)\\')) {
+        return true;
+    }
+    if (name.toLowerCase().includes('helper') || name.toLowerCase().includes('agent')) {
+        return true;
+    }
     return false;
 }
 async function performDiscovery(options) {
-    const { maxConcurrent = 25, timeout = 2000, onProgress, } = options;
+    const { maxConcurrent = 10, timeout = 2000, onProgress, } = options;
     const allCandidates = await scanPathDirectories();
     const candidates = allCandidates.filter(candidate => !isLikelyNoise(candidate.name, candidate.path));
     const discovered = [];
@@ -144,22 +153,15 @@ async function testAndScoreCLI(candidate, timeout) {
 }
 async function testHelpSupport(cliPath, timeout) {
     const helpFlags = ['--help', '-h', 'help'];
-    const promises = helpFlags.map(async (flag) => {
+    for (const flag of helpFlags) {
         try {
             const output = await executeWithTimeout(cliPath, [flag], timeout);
             if (output && output.length > 10) {
                 return output;
             }
-            return null;
         }
         catch {
-            return null;
-        }
-    });
-    const results = await Promise.all(promises);
-    for (const result of results) {
-        if (result !== null) {
-            return result;
+            continue;
         }
     }
     return null;
